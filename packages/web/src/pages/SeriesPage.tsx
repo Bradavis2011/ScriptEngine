@@ -17,7 +17,7 @@ export default function SeriesPage() {
             key={series.id}
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: si * 0.1 }}
+            transition={{ delay: si * 0.1, type: "spring", stiffness: 300, damping: 28 }}
             className="bg-card rounded-xl p-4"
           >
             <div className="flex items-start gap-3 mb-3">

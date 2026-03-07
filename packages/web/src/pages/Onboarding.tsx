@@ -37,6 +37,7 @@ export default function Onboarding() {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -30 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
             className="flex-1"
           >
             <h1 className="text-3xl font-display font-bold text-foreground mb-2">What do you create?</h1>
@@ -65,6 +66,7 @@ export default function Onboarding() {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -30 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
             className="flex-1"
           >
             <h1 className="text-3xl font-display font-bold text-foreground mb-2">How many videos per day?</h1>
@@ -93,6 +95,7 @@ export default function Onboarding() {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -30 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
             className="flex-1 flex flex-col items-center justify-center text-center"
           >
             <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-6">

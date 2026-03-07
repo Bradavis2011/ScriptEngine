@@ -27,6 +27,7 @@ model Script {
   scriptType    String   // series_episode | data_drop | trend_take | niche_tip
   scriptData    Json     // coldOpen, sections, callToAction, teleprompterText, caption, hashtags, totalDuration
   filmingStatus String   @default("ready") // ready | filmed | posted
+  public        Boolean  @default(false)   // opt-in: visible in public script library
   seriesId      String?
   series        Series?  @relation(fields: [seriesId], references: [id])
   createdAt     DateTime @default(now())

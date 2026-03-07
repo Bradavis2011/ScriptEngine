@@ -1,7 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { mockScripts } from "@/data/mockScripts";
-import { X, RotateCcw, Pause, Play, Square, Circle } from "lucide-react";
+import { X, RotateCcw, Pause, Play, Square, Circle, Share2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function TeleprompterCamera() {
@@ -64,6 +65,12 @@ export default function TeleprompterCamera() {
     setIsRecording(false);
     setIsScrolling(false);
     setShowSuccess(true);
+  };
+
+  const shareWithCredit = () => {
+    const hook = script?.coldOpen ?? "";
+    const text = `Just filmed this 🎬\n\n"${hook.slice(0, 100)}${hook.length > 100 ? "…" : ""}"\n\nScript made with ClipScript — clipscriptai.com`;
+    navigator.clipboard.writeText(text);
   };
 
   const restart = () => {
@@ -185,7 +192,7 @@ export default function TeleprompterCamera() {
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.1 }}
+              transition={{ delay: 0.1, type: "spring", stiffness: 400, damping: 25 }}
               className="text-center"
             >
               <div className="w-20 h-20 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-4">
@@ -195,12 +202,24 @@ export default function TeleprompterCamera() {
               </div>
               <h2 className="text-foreground text-xl font-display font-bold mb-1">Saved to Camera Roll</h2>
               <p className="text-muted-foreground text-sm mb-6">Script marked as filmed</p>
-              <button
-                onClick={() => navigate(-1)}
-                className="bg-primary text-primary-foreground px-8 py-3 rounded-full font-semibold text-sm active:scale-95 transition-transform"
-              >
-                Done
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    shareWithCredit();
+                    toast.success("Post text copied — paste to your feed!");
+                  }}
+                  className="flex items-center gap-2 border border-primary/40 text-primary px-5 py-3 rounded-full font-semibold text-sm active:scale-95 transition-transform"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </button>
+                <button
+                  onClick={() => navigate(-1)}
+                  className="bg-primary text-primary-foreground px-8 py-3 rounded-full font-semibold text-sm active:scale-95 transition-transform"
+                >
+                  Done
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

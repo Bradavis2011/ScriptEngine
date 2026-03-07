@@ -12,7 +12,7 @@ export default function ScriptCard({ script, index = 0 }: { script: Script; inde
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.08, duration: 0.3 }}
+      transition={{ delay: index * 0.08, type: "spring", stiffness: 300, damping: 28 }}
       onClick={() => navigate(`/script/${script.id}`)}
       className="bg-card rounded-xl p-4 cursor-pointer active:scale-[0.98] transition-transform"
     >

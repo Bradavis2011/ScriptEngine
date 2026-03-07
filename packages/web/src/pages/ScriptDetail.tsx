@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { mockScripts } from "@/data/mockScripts";
 import ScriptTypeBadge from "@/components/ScriptTypeBadge";
 import StatusBadge from "@/components/StatusBadge";
-import { ArrowLeft, Video, Copy, Hash, Clock, Camera, Film, Type } from "lucide-react";
+import { ArrowLeft, Video, Copy, Hash, Clock, Camera, Film, Type, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -22,6 +22,16 @@ export default function ScriptDetail() {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied!`);
+  };
+
+  const shareScript = () => {
+    const sectionLines = script.sections
+      .slice(0, 3)
+      .map((s) => `→ ${s.spokenWords.slice(0, 60)}${s.spokenWords.length > 60 ? "…" : ""}`)
+      .join("\n");
+    const text = `Here's the script I used for today's video:\n\n"${script.coldOpen}"\n\n${sectionLines}\n\nMade with ClipScript 🎬 clipscriptai.com`;
+    navigator.clipboard.writeText(text);
+    toast.success("Script card copied — paste it as a post!");
   };
 
   return (
@@ -50,7 +60,7 @@ export default function ScriptDetail() {
         )}
 
         {/* Cold Open */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-xl p-4">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 400, damping: 25 }} className="bg-card rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs font-semibold text-primary uppercase tracking-wider">Cold Open</span>
           </div>
@@ -67,7 +77,7 @@ export default function ScriptDetail() {
             key={i}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + i * 0.08 }}
+            transition={{ delay: 0.1 + i * 0.08, type: "spring", stiffness: 300, damping: 28 }}
             className="bg-card rounded-xl p-4"
           >
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{section.title}</span>
@@ -93,7 +103,7 @@ export default function ScriptDetail() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.3, type: "spring", stiffness: 400, damping: 25 }}
           className="bg-card rounded-xl p-4"
         >
           <span className="text-xs font-semibold text-success uppercase tracking-wider">Call to Action</span>
@@ -121,6 +131,15 @@ export default function ScriptDetail() {
             Copy Hashtags
           </button>
         </div>
+
+        {/* Share script card */}
+        <button
+          onClick={shareScript}
+          className="w-full flex items-center justify-center gap-2 border border-primary/40 text-primary py-3 rounded-xl text-sm font-medium active:scale-95 transition-transform"
+        >
+          <Share2 className="w-4 h-4" />
+          Share Script Card
+        </button>
       </div>
 
       {/* Sticky Film Button */}

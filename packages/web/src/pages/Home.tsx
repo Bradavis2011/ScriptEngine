@@ -100,7 +100,7 @@ export default function Home() {
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
-                <Button onClick={() => openPayment(STRIPE_CONCIERGE_URL, "STRIPE_CONCIERGE_URL")}>Order Concierge Script — $50</Button>
+                <Button variant="secondary" onClick={() => openPayment(STRIPE_CONCIERGE_URL, "STRIPE_CONCIERGE_URL")}>Order Concierge Script — $50</Button>
                 <Button variant="secondary" onClick={() => openPayment(STRIPE_FOUNDERS_URL, "STRIPE_FOUNDERS_URL")}>
                   Founders $60/yr
                 </Button>
@@ -121,7 +121,7 @@ export default function Home() {
                 <p className="mt-2 text-sm text-muted-foreground">
                   Get a production-ready 60s script (teleprompter text + 3 B-roll cues) delivered in 24 hours.
                 </p>
-                <Button className="mt-3" size="sm" onClick={() => openPayment(STRIPE_CONCIERGE_URL, "STRIPE_CONCIERGE_URL")}>
+                <Button className="mt-3" size="sm" variant="secondary" onClick={() => openPayment(STRIPE_CONCIERGE_URL, "STRIPE_CONCIERGE_URL")}>
                   Order Now — $50
                 </Button>
               </div>
@@ -188,7 +188,7 @@ export default function Home() {
                   )}
                   <Button
                     className="mt-4 w-full"
-                    variant={plan.name === "Free" ? "outline" : "default"}
+                    variant={plan.name === "Free" ? "outline" : plan.name === "Founders" ? "secondary" : "default"}
                     disabled={plan.name === "Free"}
                     onClick={() => plan.paymentUrl && openPayment(plan.paymentUrl, plan.paymentKey)}
                   >

@@ -19,7 +19,7 @@ export default function CameraHub() {
               key={script.id}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.08 }}
+              transition={{ delay: i * 0.08, type: "spring", stiffness: 300, damping: 28 }}
               onClick={() => navigate(`/teleprompter/${script.id}`)}
               className="w-full bg-card rounded-xl p-4 text-left active:scale-[0.98] transition-transform"
             >

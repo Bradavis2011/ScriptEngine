@@ -8,7 +8,7 @@ export default function ThankYou() {
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md border-border/70 bg-card/90">
         <CardContent className="p-8 text-center">
-          <CheckCircle className="mx-auto mb-4 h-12 w-12 text-green-500" />
+          <CheckCircle className="mx-auto mb-4 h-12 w-12 text-success" />
           <h1 className="font-display text-2xl font-bold">You're in.</h1>
           <p className="mt-3 text-muted-foreground">
             Your purchase is confirmed. Here's what happens next:
