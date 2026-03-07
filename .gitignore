@@ -54,3 +54,7 @@ coverage/
 
 # Railway / Vercel
 .vercel/
+
+# Bun lockfiles (monorepo uses npm workspaces — child bun lockfiles cause duplicate React)
+bun.lock
+bun.lockb
