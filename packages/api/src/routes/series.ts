@@ -55,8 +55,9 @@ router.get('/:id/episodes', requireAuth, async (req, res: Response) => {
     return;
   }
 
+  const id = String(req.params.id);
   const series = await prisma.series.findFirst({
-    where: { id: req.params.id, tenantId: tenant.id },
+    where: { id, tenantId: tenant.id },
   });
   if (!series) {
     res.status(404).json({ error: 'Series not found' });
@@ -64,7 +65,7 @@ router.get('/:id/episodes', requireAuth, async (req, res: Response) => {
   }
 
   const episodes = await prisma.script.findMany({
-    where: { seriesId: req.params.id, tenantId: tenant.id },
+    where: { seriesId: id, tenantId: tenant.id },
     orderBy: { createdAt: 'asc' },
   });
 

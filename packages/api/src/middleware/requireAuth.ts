@@ -1,7 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { createClerkClient } from '@clerk/backend';
-
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! });
+import { verifyToken } from '@clerk/backend';
 
 export interface AuthedRequest extends Request {
   clerkUserId: string;
@@ -16,7 +14,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
   const token = authHeader.slice(7);
   try {
-    const { sub } = await clerk.verifyToken(token);
+    const { sub } = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY! });
     (req as AuthedRequest).clerkUserId = sub;
     next();
   } catch {

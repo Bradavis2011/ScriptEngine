@@ -102,8 +102,9 @@ router.get('/:id', requireAuth, async (req, res: Response) => {
     return;
   }
 
+  const id = String(req.params.id);
   const script = await prisma.script.findFirst({
-    where: { id: req.params.id, tenantId: tenant.id },
+    where: { id, tenantId: tenant.id },
   });
 
   if (!script) {
@@ -131,8 +132,9 @@ router.patch('/:id/status', requireAuth, async (req, res: Response) => {
     return;
   }
 
+  const id = String(req.params.id);
   const script = await prisma.script.findFirst({
-    where: { id: req.params.id, tenantId: tenant.id },
+    where: { id, tenantId: tenant.id },
   });
   if (!script) {
     res.status(404).json({ error: 'Script not found' });
@@ -140,7 +142,7 @@ router.patch('/:id/status', requireAuth, async (req, res: Response) => {
   }
 
   const updated = await prisma.script.update({
-    where: { id: req.params.id },
+    where: { id },
     data: { filmingStatus },
   });
 
