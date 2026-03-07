@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth, useUser } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createTenant } from "@/lib/api";
 import { toast } from "sonner";

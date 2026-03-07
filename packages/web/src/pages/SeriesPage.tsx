@@ -1,4 +1,4 @@
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
 import { ApiSeries } from "@/types/api";
 import { getSeries } from "@/lib/api";

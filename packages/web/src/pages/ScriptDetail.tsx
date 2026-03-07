@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
 import { ApiScript, fromApiScript } from "@/types/api";
 import { getScript } from "@/lib/api";

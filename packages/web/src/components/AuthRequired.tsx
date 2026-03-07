@@ -1,4 +1,4 @@
-import { useAuth, RedirectToSignIn } from '@clerk/clerk-react';
+import { useAuth, RedirectToSignIn } from '@clerk/react';
 
 export default function AuthRequired({ children }: { children: React.ReactNode }) {
   const { isSignedIn, isLoaded } = useAuth();
