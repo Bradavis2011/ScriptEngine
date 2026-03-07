@@ -2,7 +2,7 @@
   "framework": null,
   "buildCommand": "npm run build:web",
   "outputDirectory": "packages/web/dist",
-  "installCommand": "npm install",
+  "installCommand": "rm -rf node_modules && npm install",
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
