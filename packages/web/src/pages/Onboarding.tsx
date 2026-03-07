@@ -1,24 +1,43 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { createTenant } from "@/lib/api";
+import { toast } from "sonner";
 
 const niches = ["Fashion", "Fitness", "Food", "Tech", "Finance", "Business"];
 const frequencies = ["1", "3", "5", "10"];
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const { getToken } = useAuth();
+  const { user } = useUser();
   const [step, setStep] = useState(0);
   const [selectedNiche, setSelectedNiche] = useState<string | null>(null);
   const [selectedFreq, setSelectedFreq] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const next = () => {
-    if (step < 2) setStep(step + 1);
-    else navigate("/");
+  const next = async () => {
+    if (step < 2) {
+      setStep(step + 1);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = await getToken();
+      const email = user?.primaryEmailAddress?.emailAddress ?? '';
+      await createTenant({ email, niche: selectedNiche! }, token!);
+      navigate('/library');
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-background px-6 pt-16 pb-8 max-w-lg mx-auto">
-      {/* Progress */}
       <div className="flex gap-2 mb-12">
         {[0, 1, 2].map((i) => (
           <div
@@ -103,19 +122,18 @@ export default function Onboarding() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-3xl font-display font-bold text-foreground mb-2">Your first scripts are ready</h1>
-            <p className="text-muted-foreground text-sm">Open the app each morning to find fresh scripts waiting for you</p>
+            <h1 className="text-3xl font-display font-bold text-foreground mb-2">You're all set</h1>
+            <p className="text-muted-foreground text-sm">Generate your first script from the library</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Continue button */}
       <button
         onClick={next}
-        disabled={(step === 0 && !selectedNiche) || (step === 1 && !selectedFreq)}
+        disabled={loading || (step === 0 && !selectedNiche) || (step === 1 && !selectedFreq)}
         className="mt-auto w-full bg-primary text-primary-foreground py-4 rounded-2xl font-bold text-base disabled:opacity-40 active:scale-[0.98] transition-transform"
       >
-        {step === 2 ? "View Scripts" : "Continue"}
+        {loading ? "Setting up..." : step === 2 ? "Go to Library" : "Continue"}
       </button>
     </div>
   );

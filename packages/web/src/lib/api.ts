@@ -54,6 +54,10 @@ export const updateScriptStatus = (
     token,
   });
 
+// ---------- Scripts (all) ----------
+export const getScripts = (status: string, token: string) =>
+  request(`/api/scripts?status=${encodeURIComponent(status)}`, { token });
+
 // ---------- Series ----------
 export const getSeries = (token: string) => request('/api/series', { token });
 

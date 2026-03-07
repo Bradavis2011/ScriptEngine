@@ -8,6 +8,30 @@ const router = Router();
 const SCRIPT_TYPES = ['series_episode', 'data_drop', 'trend_take', 'niche_tip'] as const;
 type ScriptType = (typeof SCRIPT_TYPES)[number];
 
+// GET /api/scripts — all scripts for tenant, optional ?status= filter
+router.get('/', requireAuth, async (req, res: Response) => {
+  const { clerkUserId } = req as AuthedRequest;
+  const { status } = req.query;
+
+  const tenant = await prisma.tenant.findUnique({ where: { clerkUserId } });
+  if (!tenant) {
+    res.status(404).json({ error: 'Tenant not found — complete onboarding first' });
+    return;
+  }
+
+  const where: Record<string, unknown> = { tenantId: tenant.id };
+  if (status && typeof status === 'string') {
+    where.filmingStatus = status;
+  }
+
+  const scripts = await prisma.script.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+  });
+
+  res.json(scripts);
+});
+
 // POST /api/scripts/generate — generate scripts for the authed tenant
 router.post('/generate', requireAuth, async (req, res: Response) => {
   const { clerkUserId } = req as AuthedRequest;

@@ -6,6 +6,7 @@ const SCRIPT_RESPONSE_SCHEMA = {
   type: SchemaType.OBJECT,
   properties: {
     coldOpen: { type: SchemaType.STRING },
+    coldOpenCamera: { type: SchemaType.STRING },
     sections: {
       type: SchemaType.ARRAY,
       items: {
@@ -14,11 +15,14 @@ const SCRIPT_RESPONSE_SCHEMA = {
           heading: { type: SchemaType.STRING },
           script: { type: SchemaType.STRING },
           bRollSuggestion: { type: SchemaType.STRING },
+          cameraDirection: { type: SchemaType.STRING },
+          textOverlay: { type: SchemaType.STRING },
         },
-        required: ['heading', 'script', 'bRollSuggestion'],
+        required: ['heading', 'script', 'bRollSuggestion', 'cameraDirection', 'textOverlay'],
       },
     },
     callToAction: { type: SchemaType.STRING },
+    callToActionCamera: { type: SchemaType.STRING },
     teleprompterText: { type: SchemaType.STRING },
     caption: { type: SchemaType.STRING },
     hashtags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
@@ -26,8 +30,10 @@ const SCRIPT_RESPONSE_SCHEMA = {
   },
   required: [
     'coldOpen',
+    'coldOpenCamera',
     'sections',
     'callToAction',
+    'callToActionCamera',
     'teleprompterText',
     'caption',
     'hashtags',
@@ -56,8 +62,16 @@ export interface GenerateScriptInput {
 
 export interface ScriptData {
   coldOpen: string;
-  sections: Array<{ heading: string; script: string; bRollSuggestion: string }>;
+  coldOpenCamera: string;
+  sections: Array<{
+    heading: string;
+    script: string;
+    bRollSuggestion: string;
+    cameraDirection: string;
+    textOverlay: string;
+  }>;
   callToAction: string;
+  callToActionCamera: string;
   teleprompterText: string;
   caption: string;
   hashtags: string[];
