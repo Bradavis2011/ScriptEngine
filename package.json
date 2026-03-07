@@ -1,0 +1,17 @@
+{
+  "name": "scriptengine",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm --workspace packages/api run dev",
+    "dev:web": "npm --workspace packages/web run dev",
+    "build:api": "npm --workspace packages/api run build",
+    "build:web": "npm --workspace packages/web run build"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id            String   @id @default(cuid())
+  clerkUserId   String   @unique
+  email         String
+  niche         String
+  tier          String   @default("free") // free | pro | founders | team
+  scriptsPerDay Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  scripts       Script[]
+  series        Series[]
+}
+
+model Script {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  scriptType    String   // series_episode | data_drop | trend_take | niche_tip
+  scriptData    Json     // coldOpen, sections, callToAction, teleprompterText, caption, hashtags, totalDuration
+  filmingStatus String   @default("ready") // ready | filmed | posted
+  seriesId      String?
+  series        Series?  @relation(fields: [seriesId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId, filmingStatus])
+  @@index([tenantId, createdAt])
+}
+
+model Series {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  name         String
+  episodeCount Int      @default(0)
+  status       String   @default("in_progress") // in_progress | complete
+  scripts      Script[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model ConciergeOrder {
+  id              String   @id @default(cuid())
+  stripePaymentId String   @unique
+  email           String
+  niche           String?
+  scriptDelivered Boolean  @default(false)
+  createdAt       DateTime @default(now())
+}
