@@ -30,7 +30,7 @@ export default function ThankYou() {
             <li className="flex items-start gap-3">
               <Rocket className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <span>
-                <strong className="text-foreground">Questions?</strong> Email hello@scriptengine.app — we respond fast.
+                <strong className="text-foreground">Questions?</strong> Email hello@clipscriptai.com — we respond fast.
               </span>
             </li>
           </ul>

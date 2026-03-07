@@ -72,10 +72,10 @@ export default function Home() {
         <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary font-display text-sm font-bold text-primary-foreground">
-              SE
+              CS
             </div>
             <div>
-              <h1 className="font-display text-2xl font-bold">ScriptEngine</h1>
+              <h1 className="font-display text-2xl font-bold">ClipScript</h1>
               <p className="text-sm text-muted-foreground">Film-ready short-form scripts — teleprompter-ready, one-tap to film.</p>
             </div>
           </div>
@@ -95,7 +95,7 @@ export default function Home() {
             <CardContent className="p-6">
               <p className="font-display text-3xl font-bold leading-tight md:text-4xl">Open the app → script → film</p>
               <p className="mt-4 max-w-2xl text-muted-foreground">
-                ScriptEngine generates teleprompter-ready scripts with camera directions, B-roll, and captions. Film in minutes — no
+                ClipScript generates teleprompter-ready scripts with camera directions, B-roll, and captions. Film in minutes — no
                 copy/paste.
               </p>
 
@@ -203,12 +203,12 @@ export default function Home() {
             <p className="font-display font-semibold">Agency / Teams</p>
             <p className="mt-1 text-sm text-muted-foreground">Bulk seats, shared libraries, and onboarding for agencies. Contact sales.</p>
             <div className="mt-3 inline-flex items-center gap-2 text-sm text-muted-foreground">
-              <Users className="h-4 w-4" /> hello@scriptengine.app
+              <Users className="h-4 w-4" /> hello@clipscriptai.com
             </div>
           </div>
         </section>
 
-        <footer className="pb-24 pt-8 text-center text-xs text-muted-foreground">Questions? Email hello@scriptengine.app • Crafted for creators</footer>
+        <footer className="pb-24 pt-8 text-center text-xs text-muted-foreground">Questions? Email hello@clipscriptai.com • Crafted for creators</footer>
       </div>
 
     </main>

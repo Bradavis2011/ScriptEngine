@@ -1,4 +1,4 @@
-// API client for ScriptEngine backend
+// API client for ClipScript backend
 // Auth token injection will be wired up in Phase 1C when Clerk is added
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';

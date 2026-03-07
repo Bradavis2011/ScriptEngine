@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 import { ScriptData } from './gemini';
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
-const FROM = process.env.RESEND_FROM_EMAIL ?? 'scripts@scriptengine.app';
+const FROM = process.env.RESEND_FROM_EMAIL ?? 'scripts@clipscriptai.com';
 
 export async function sendConciergeDelivery({
   toEmail,
@@ -29,7 +29,7 @@ export async function sendConciergeDelivery({
   await resend.emails.send({
     from: FROM,
     to: toEmail,
-    subject: `Your ScriptEngine concierge script is ready 🎬`,
+    subject: `Your ClipScript concierge script is ready 🎬`,
     html: `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
         <h1 style="color:#0B0B0D;">Your Script is Ready</h1>
@@ -57,7 +57,7 @@ export async function sendConciergeDelivery({
 
         <p style="color:#888;font-size:12px;margin-top:32px;">
           Estimated delivery time: ${scriptData.totalDurationSeconds}s<br/>
-          ScriptEngine — short-form scripts that actually get filmed
+          ClipScript — short-form scripts that actually get filmed
         </p>
       </div>
     `,
@@ -77,7 +77,7 @@ export async function sendInternalConciergeAlert({
   await resend.emails.send({
     from: FROM,
     to: adminEmail,
-    subject: `[ScriptEngine] New concierge order — ${orderEmail}`,
+    subject: `[ClipScript] New concierge order — ${orderEmail}`,
     html: `
       <p><strong>Order from:</strong> ${orderEmail}</p>
       <p><strong>Niche:</strong> ${niche ?? 'not specified'}</p>
