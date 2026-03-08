@@ -6,6 +6,7 @@ import webhookRouter from './routes/webhooks';
 import tenantRouter from './routes/tenants';
 import scriptRouter from './routes/scripts';
 import seriesRouter from './routes/series';
+import checkoutRouter from './routes/checkout';
 
 export function createApp() {
   const app = express();
@@ -39,6 +40,7 @@ export function createApp() {
   app.use('/api/tenants', tenantRouter);
   app.use('/api/scripts', scriptRouter);
   app.use('/api/series', seriesRouter);
+  app.use('/api/checkout', checkoutRouter);
 
   // 404 fallthrough
   app.use((_req, res) => {

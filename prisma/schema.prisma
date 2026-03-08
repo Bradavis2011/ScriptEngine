@@ -56,6 +56,8 @@ model ConciergeOrder {
   stripePaymentId String   @unique
   email           String
   niche           String?
+  topic           String?  // broad topic (pack) or specific angle (concierge)
+  orderType       String   @default("concierge") // pack | concierge
   scriptDelivered Boolean  @default(false)
   createdAt       DateTime @default(now())
 }
