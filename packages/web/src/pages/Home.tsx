@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "https://scriptengine-production.up.railway.app";
 const STRIPE_FOUNDERS_URL = import.meta.env.VITE_STRIPE_FOUNDERS_URL as string | undefined;
+const STRIPE_PRO_MONTHLY_URL = import.meta.env.VITE_STRIPE_PRO_MONTHLY_URL as string | undefined;
 
 const NICHES = ["Fashion", "Fitness", "Food", "Tech", "Finance", "Business", "Beauty", "Travel", "Gaming", "Education"];
 const PLATFORMS = ["TikTok", "Instagram Reels", "YouTube Shorts", "All platforms"];
@@ -355,31 +356,56 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          {/* $60 Founders Annual */}
+          {/* Subscription */}
           <Card className="border-border/70 bg-card/90 flex flex-col">
             <CardContent className="p-6 flex flex-col flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <Rocket className="h-4 w-4 text-amber-500" />
-                <span className="text-xs font-semibold text-amber-500 uppercase tracking-wider">First 100 only</span>
+                <Rocket className="h-4 w-4 text-primary" />
+                <span className="text-xs font-semibold text-primary uppercase tracking-wider">Full app access</span>
               </div>
-              <h2 className="font-display text-xl font-bold mt-1">Founders Annual</h2>
-              <p className="text-3xl font-extrabold mt-1">$60<span className="text-lg font-normal text-muted-foreground">/yr</span></p>
-              <p className="text-sm text-muted-foreground mt-2 flex-1">
-                Lock in the founding price. Full app access on launch — scripts, teleprompter camera, series management, everything.
+              <h2 className="font-display text-xl font-bold mt-1">Pro Subscription</h2>
+              <p className="text-sm text-muted-foreground mt-2 mb-4 flex-1">
+                Scripts, teleprompter camera, series management — everything. iOS + Android on launch.
               </p>
-              <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> Full mobile app (iOS + Android)</li>
+              <ul className="mb-5 space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> 5 scripts/day</li>
-                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> 1 free Concierge Brief</li>
-                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> Founding price locked yr 1</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> Built-in teleprompter camera</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> Series + library management</li>
               </ul>
-              <Button className="mt-5 w-full bg-amber-500 hover:bg-amber-600 text-white"
-                onClick={() => {
-                  if (STRIPE_FOUNDERS_URL) window.location.href = STRIPE_FOUNDERS_URL;
-                  else toast.error("Founders link coming soon — email hello@clipscriptai.com");
-                }}>
-                Claim Founders Seat — $60/yr
-              </Button>
+
+              {/* Monthly option */}
+              <div className="rounded-lg border border-border p-3 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm">Monthly</span>
+                  <span className="font-extrabold">$7<span className="text-xs font-normal text-muted-foreground">/mo</span></span>
+                </div>
+                <Button size="sm" variant="outline" className="w-full"
+                  onClick={() => {
+                    if (STRIPE_PRO_MONTHLY_URL) window.location.href = STRIPE_PRO_MONTHLY_URL;
+                    else toast.error("Coming soon — email hello@clipscriptai.com");
+                  }}>
+                  Subscribe Monthly
+                </Button>
+              </div>
+
+              {/* Founders option */}
+              <div className="rounded-lg border border-amber-500/50 bg-amber-500/5 p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-sm">Founders Annual</span>
+                    <span className="text-xs font-bold bg-amber-500 text-black rounded-full px-2 py-0.5">First 100</span>
+                  </div>
+                  <span className="font-extrabold text-amber-500">$60<span className="text-xs font-normal text-muted-foreground">/yr</span></span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">~$5/mo — price locked for year 1. Includes 1 free Concierge Brief.</p>
+                <Button size="sm" className="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold"
+                  onClick={() => {
+                    if (STRIPE_FOUNDERS_URL) window.location.href = STRIPE_FOUNDERS_URL;
+                    else toast.error("Coming soon — email hello@clipscriptai.com");
+                  }}>
+                  Claim Founders Seat
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
