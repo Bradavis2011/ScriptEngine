@@ -180,11 +180,8 @@ export default function Home() {
 
         {/* Header */}
         <header className="mb-10 text-center">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary font-display text-sm font-bold text-primary-foreground">
-              CS
-            </div>
-            <span className="font-display text-2xl font-bold">ClipScript</span>
+          <div className="mb-6">
+            <img src="/hero-banner.png" alt="ClipScript — AI Scripts for Viral Videos" className="mx-auto w-full max-w-2xl rounded-2xl" />
           </div>
           <h1 className="font-display text-4xl font-bold leading-tight md:text-5xl">
             Film-ready scripts.<br />In your inbox in minutes.
