@@ -48,6 +48,8 @@ const SCRIPT_TYPE_PROMPTS: Record<string, string> = {
     'Write a hot-take short-form video script about a current trend in this niche. Start with a bold opinion or contrarian take.',
   niche_tip:
     'Write a practical tips short-form video script with 3 actionable tips the viewer can use immediately. Make each tip specific and concrete.',
+  niche_tip_basic:
+    'Give a single practical, broadly useful tip about the given topic. Keep it accessible, beginner-friendly, and general. No deep research, no niche-specific jargon, no data citations.',
   series_episode:
     'Write a short-form video script for an episode in an ongoing series. Reference that it is part of a series and tease the next episode.',
 };

@@ -18,11 +18,11 @@ router.use(express.raw({ type: 'application/json' }));
 const FRONTEND_URL = process.env.FRONTEND_URL ?? 'https://clipscriptai.com';
 
 const PACK_SCRIPT_TYPES = [
-  'niche_tip',
-  'data_drop',
-  'trend_take',
-  'niche_tip',
-  'niche_tip',
+  'niche_tip_basic',
+  'niche_tip_basic',
+  'niche_tip_basic',
+  'niche_tip_basic',
+  'niche_tip_basic',
 ] as const;
 
 // ---------------------------------------------------------------------------

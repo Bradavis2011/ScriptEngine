@@ -106,10 +106,10 @@ function PackForm({ onCancel }: { onCancel: () => void }) {
         <option value="">Select your niche…</option>
         {NICHES.map((n) => <option key={n} value={n}>{n}</option>)}
       </select>
-      <input type="text" placeholder="Broad topic (e.g. 'morning routines', 'gym beginner mistakes')"
+      <input type="text" placeholder="Broad topic (e.g. 'gym tips', 'meal prep', 'European art')"
         value={topic} onChange={(e) => setTopic(e.target.value)} maxLength={200}
         className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-      <p className="text-xs text-muted-foreground">5 scripts in different formats — all teleprompter-ready. Delivered in minutes.</p>
+      <p className="text-xs text-muted-foreground">5 quick scripts on your topic — all teleprompter-ready. Delivered in minutes.</p>
       <div className="flex gap-2">
         <Button onClick={submit} disabled={loading} className="flex-1">{loading ? "Redirecting…" : "Continue to Payment →"}</Button>
         <Button variant="ghost" onClick={onCancel} disabled={loading}>Cancel</Button>
@@ -292,7 +292,7 @@ export default function Home() {
         {/* Nav */}
         <nav className="relative mx-auto flex max-w-5xl items-center justify-between px-4 py-4 md:px-8">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="ClipScript logo" className="h-8 w-8 rounded-lg" />
+            <img src="/icon.png" alt="ClipScript logo" className="h-8 w-8 rounded-lg" />
             <span className="font-display text-lg font-bold">ClipScript</span>
           </div>
           <Button size="sm" onClick={() => document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })}>
@@ -401,7 +401,7 @@ export default function Home() {
                 Deep research on your topic. YouTube trend analysis, audience profile, keyword layer, series plan, hook library, and 2 full scripts.
               </p>
               <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> YouTube performance research</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> Platform performance patterns</li>
                 <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> Keywords + hashtag strategy</li>
                 <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> 8-episode series plan</li>
                 <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> 12 custom hooks + 2 full scripts</li>
