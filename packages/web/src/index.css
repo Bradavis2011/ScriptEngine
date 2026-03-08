@@ -76,6 +76,13 @@
     font-family: 'TikTok Sans', 'Inter', sans-serif;
   }
 
+  .hero-gradient-text {
+    background: linear-gradient(135deg, hsl(175 97% 55%) 0%, hsl(348 99% 59%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;

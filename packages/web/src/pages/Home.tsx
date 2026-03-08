@@ -32,7 +32,7 @@ async function createCheckoutSession(endpoint: string, body: Record<string, stri
 // ---------------------------------------------------------------------------
 function ExampleScript() {
   return (
-    <section className="mb-14">
+    <section id="example" className="mb-14">
       <div className="text-center mb-6">
         <span className="text-xs font-bold text-primary uppercase tracking-widest">Example output</span>
         <h2 className="font-display text-2xl font-bold mt-2">This is what you get</h2>
@@ -281,26 +281,84 @@ export default function Home() {
     <main className="min-h-screen bg-background text-foreground">
       {conciergeOpen && <ConciergeModal onClose={() => setConciergeOpen(false)} />}
 
-      <div className="mx-auto max-w-5xl px-4 py-10 md:px-8">
+      {/* HERO — full-bleed with gradient orb background */}
+      <section className="relative overflow-hidden pb-20 pt-4">
+        {/* Background orbs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          <div className="absolute -left-40 -top-40 h-[600px] w-[600px] rounded-full bg-primary/20 blur-[120px]" />
+          <div className="absolute -top-20 right-0 h-[500px] w-[500px] rounded-full bg-secondary/20 blur-[120px]" />
+        </div>
 
-        {/* Header */}
-        <header className="mb-12 text-center">
-          <div className="mb-6">
-            <img src="/hero-banner.png" alt="ClipScript — AI Scripts for Viral Videos" className="mx-auto w-full max-w-2xl rounded-2xl" />
+        {/* Nav */}
+        <nav className="relative mx-auto flex max-w-5xl items-center justify-between px-4 py-4 md:px-8">
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="ClipScript logo" className="h-8 w-8 rounded-lg" />
+            <span className="font-display text-lg font-bold">ClipScript</span>
           </div>
-          <h1 className="font-display text-4xl font-bold leading-tight md:text-5xl">
-            Film-ready scripts.<br />In your inbox in minutes.
+          <Button size="sm" onClick={() => document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })}>
+            Get Scripts
+          </Button>
+        </nav>
+
+        {/* Hero content */}
+        <div className="relative mx-auto max-w-5xl px-4 pt-12 text-center md:px-8 md:pt-20 lg:pt-24">
+          {/* Kicker pill */}
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/40 px-3 py-1">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            <span className="text-xs font-bold uppercase tracking-widest text-primary">AI-Powered Scripts</span>
+          </div>
+
+          {/* Headline */}
+          <h1 className="font-display text-4xl font-bold leading-none tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+            Write it.<br />
+            <span className="hero-gradient-text">Film it.</span><br />
+            Post it.
           </h1>
-          <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
-            Short-form video scripts with teleprompter text, camera directions, B-roll cues, and captions — built for creators who actually film.
+
+          {/* Subtitle */}
+          <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground md:text-xl">
+            Film-ready short-form scripts with teleprompter text, B-roll cues, and captions — delivered in minutes, not days.
           </p>
-        </header>
+
+          {/* CTAs */}
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <Button
+              size="lg"
+              className="shadow-[0_0_24px_hsl(175_97%_55%/0.35)]"
+              onClick={() => document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })}
+            >
+              Get Film-Ready Scripts
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => document.getElementById("example")?.scrollIntoView({ behavior: "smooth" })}
+            >
+              See an Example
+            </Button>
+          </div>
+
+          {/* Platform badges */}
+          <div className="mt-6 flex items-center justify-center gap-3 text-xs text-muted-foreground">
+            <span>TikTok</span>
+            <span className="text-border">|</span>
+            <span>Instagram Reels</span>
+            <span className="text-border">|</span>
+            <span>YouTube Shorts</span>
+          </div>
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-5xl px-4 pb-10 md:px-8">
 
         {/* Example output */}
         <ExampleScript />
 
         {/* 3 products */}
-        <div className="grid gap-4 md:grid-cols-3 mb-12">
+        <div id="products" className="grid gap-4 md:grid-cols-3 mb-12">
 
           {/* $25 Script Pack */}
           <Card className="border-border/70 bg-card/90 flex flex-col">
