@@ -3,9 +3,11 @@ import { useAuth } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { FilmingStatus } from "@/data/mockScripts";
-import { ApiScript, fromApiScript } from "@/types/api";
-import { getScripts } from "@/lib/api";
+import { ApiScript, ApiSeries, fromApiScript } from "@/types/api";
+import { getScripts, getSeries } from "@/lib/api";
 import ScriptCard from "@/components/ScriptCard";
+import GenerateSheet from "@/components/GenerateSheet";
+import { Plus } from "lucide-react";
 
 const tabs: { label: string; status: FilmingStatus }[] = [
   { label: "Ready", status: "ready" },
@@ -15,8 +17,17 @@ const tabs: { label: string; status: FilmingStatus }[] = [
 
 export default function Library() {
   const [activeTab, setActiveTab] = useState<FilmingStatus>("ready");
+  const [generateOpen, setGenerateOpen] = useState(false);
   const { getToken } = useAuth();
   const navigate = useNavigate();
+
+  const { data: seriesList = [] } = useQuery({
+    queryKey: ["series"],
+    queryFn: async () => {
+      const token = await getToken();
+      return getSeries(token!) as Promise<ApiSeries[]>;
+    },
+  });
 
   const { data: scripts = [], isLoading, isError, error } = useQuery({
     queryKey: ["scripts", activeTab],
@@ -35,7 +46,17 @@ export default function Library() {
 
   return (
     <div className="min-h-screen pb-24 px-4 pt-6 max-w-lg mx-auto">
-      <h1 className="text-2xl font-display font-bold text-foreground mb-4">Script Library</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-display font-bold text-foreground">Script Library</h1>
+        <button
+          onClick={() => setGenerateOpen(true)}
+          className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-2 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
+        >
+          <Plus className="w-4 h-4" />
+          Generate
+        </button>
+      </div>
+      <GenerateSheet open={generateOpen} onOpenChange={setGenerateOpen} series={seriesList} />
 
       <div className="flex gap-1 bg-card rounded-xl p-1 mb-5">
         {tabs.map((tab) => (

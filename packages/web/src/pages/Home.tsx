@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +69,13 @@ const pricing = [
 ];
 
 export default function Home() {
+  const { isSignedIn, isLoaded } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) navigate("/library", { replace: true });
+  }, [isLoaded, isSignedIn, navigate]);
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-10">

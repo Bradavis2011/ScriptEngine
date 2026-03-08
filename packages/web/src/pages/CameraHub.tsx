@@ -1,18 +1,34 @@
-import { mockScripts } from "@/data/mockScripts";
 import { Video, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useAuth } from "@clerk/react";
+import { useQuery } from "@tanstack/react-query";
+import { ApiScript, fromApiScript } from "@/types/api";
+import { getScripts } from "@/lib/api";
 
 export default function CameraHub() {
   const navigate = useNavigate();
-  const readyScripts = mockScripts.filter((s) => s.filmingStatus === "ready");
+  const { getToken } = useAuth();
+
+  const { data: readyScripts = [], isLoading } = useQuery({
+    queryKey: ["scripts", "ready"],
+    queryFn: async () => {
+      const token = await getToken();
+      const raw = await getScripts("ready", token!) as ApiScript[];
+      return raw.map(fromApiScript);
+    },
+  });
 
   return (
     <div className="min-h-screen pb-24 px-4 pt-6 max-w-lg mx-auto">
       <h1 className="text-2xl font-display font-bold text-foreground mb-2">Ready to Film</h1>
       <p className="text-sm text-muted-foreground mb-6">Pick a script and start rolling</p>
 
-      {readyScripts.length > 0 ? (
+      {isLoading ? (
+        <div className="text-center pt-16">
+          <p className="text-muted-foreground text-sm">Loading...</p>
+        </div>
+      ) : readyScripts.length > 0 ? (
         <div className="space-y-3">
           {readyScripts.map((script, i) => (
             <motion.button

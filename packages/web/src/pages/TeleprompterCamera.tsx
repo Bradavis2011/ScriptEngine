@@ -1,14 +1,28 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { mockScripts } from "@/data/mockScripts";
 import { X, RotateCcw, Pause, Play, Square, Circle, Share2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@clerk/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ApiScript, fromApiScript } from "@/types/api";
+import { getScript, updateScriptStatus } from "@/lib/api";
 
 export default function TeleprompterCamera() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const script = mockScripts.find((s) => s.id === id);
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: script, isLoading } = useQuery({
+    queryKey: ["script", id],
+    queryFn: async () => {
+      const token = await getToken();
+      const raw = await getScript(id!, token!) as ApiScript;
+      return fromApiScript(raw);
+    },
+    enabled: !!id,
+  });
 
   const [isRecording, setIsRecording] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
@@ -61,9 +75,16 @@ export default function TeleprompterCamera() {
     setElapsed(0);
   };
 
-  const stopRecording = () => {
+  const stopRecording = async () => {
     setIsRecording(false);
     setIsScrolling(false);
+    try {
+      const token = await getToken();
+      await updateScriptStatus(id!, "filmed", token!);
+      queryClient.invalidateQueries({ queryKey: ["scripts"] });
+    } catch {
+      // status update is best-effort; don't block the success screen
+    }
     setShowSuccess(true);
   };
 
@@ -80,10 +101,10 @@ export default function TeleprompterCamera() {
     setElapsed(0);
   };
 
-  if (!script) {
+  if (isLoading || !script) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Script not found</p>
+        <p className="text-muted-foreground">{isLoading ? "Loading..." : "Script not found"}</p>
       </div>
     );
   }

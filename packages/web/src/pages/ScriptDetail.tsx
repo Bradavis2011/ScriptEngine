@@ -2,17 +2,37 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
 import { ApiScript, fromApiScript } from "@/types/api";
-import { getScript } from "@/lib/api";
+import { getScript, updateScriptStatus } from "@/lib/api";
 import ScriptTypeBadge from "@/components/ScriptTypeBadge";
 import StatusBadge from "@/components/StatusBadge";
-import { ArrowLeft, Video, Copy, Hash, Clock, Camera, Film, Type, Share2 } from "lucide-react";
+import { ArrowLeft, Video, Copy, Hash, Clock, Camera, Film, Type, Share2, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 export default function ScriptDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getToken } = useAuth();
+
+  const queryClient = useQueryClient();
+  const [markingPosted, setMarkingPosted] = useState(false);
+
+  const markAsPosted = async () => {
+    setMarkingPosted(true);
+    try {
+      const token = await getToken();
+      await updateScriptStatus(id!, "posted", token!);
+      queryClient.invalidateQueries({ queryKey: ["scripts"] });
+      queryClient.invalidateQueries({ queryKey: ["script", id] });
+      toast.success("Marked as posted!");
+      navigate(-1);
+    } catch {
+      toast.error("Failed to update status.");
+      setMarkingPosted(false);
+    }
+  };
 
   const { data: script, isLoading } = useQuery({
     queryKey: ["script", id],
@@ -166,6 +186,19 @@ export default function ScriptDetail() {
           >
             <Video className="w-5 h-5" />
             Film With Teleprompter
+          </button>
+        </div>
+      )}
+
+      {script.filmingStatus === "filmed" && (
+        <div className="fixed bottom-20 left-0 right-0 px-4 max-w-lg mx-auto">
+          <button
+            onClick={markAsPosted}
+            disabled={markingPosted}
+            className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-4 rounded-2xl font-bold text-base shadow-lg disabled:opacity-50 active:scale-[0.98] transition-transform"
+          >
+            <CheckCircle2 className="w-5 h-5" />
+            {markingPosted ? "Updating…" : "Mark as Posted"}
           </button>
         </div>
       )}
