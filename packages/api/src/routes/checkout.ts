@@ -54,13 +54,17 @@ router.post('/pack', async (req: Request, res: Response) => {
   res.json({ url: session.url });
 });
 
-// POST /api/checkout/concierge — $50, 1 custom script with brief, 2 tweaks
+// POST /api/checkout/concierge — $50, full content strategy brief
 router.post('/concierge', async (req: Request, res: Response) => {
-  const { email, niche, topic, brief } = req.body as {
+  const { email, niche, topic, brief, platform, stage, audience, goals } = req.body as {
     email?: string;
     niche?: string;
     topic?: string;
     brief?: string;
+    platform?: string;
+    stage?: string;
+    audience?: string;
+    goals?: string;
   };
 
   if (!email || !niche || !topic) {
@@ -77,8 +81,8 @@ router.post('/concierge', async (req: Request, res: Response) => {
         price_data: {
           currency: 'usd',
           product_data: {
-            name: 'ClipScript — Concierge Script',
-            description: `Custom ${niche} script on "${topic}" — 2 tweaks included`,
+            name: 'ClipScript — Content Strategy Brief',
+            description: `Full strategy brief for ${niche} — "${topic}"`,
           },
           unit_amount: 5000,
         },
@@ -93,6 +97,10 @@ router.post('/concierge', async (req: Request, res: Response) => {
       topic: topic.slice(0, 490),
       brief: (brief ?? '').slice(0, 490),
       email,
+      platform: (platform ?? '').slice(0, 50),
+      stage: (stage ?? '').slice(0, 50),
+      audience: (audience ?? '').slice(0, 490),
+      goals: (goals ?? '').slice(0, 200),
     },
     success_url: `${FRONTEND_URL}/thank-you?type=concierge`,
     cancel_url: `${FRONTEND_URL}/`,

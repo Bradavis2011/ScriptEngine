@@ -2,6 +2,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import ThankYou from "./pages/ThankYou";
+import Report from "./pages/Report";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -11,6 +12,7 @@ const App = () => (
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/thank-you" element={<ThankYou />} />
+        <Route path="/report/:token" element={<Report />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

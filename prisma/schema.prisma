@@ -56,8 +56,15 @@ model ConciergeOrder {
   stripePaymentId String   @unique
   email           String
   niche           String?
-  topic           String?  // broad topic (pack) or specific angle (concierge)
+  topic           String?
   orderType       String   @default("concierge") // pack | concierge
+  // concierge extra fields
+  platform        String?  // tiktok | reels | shorts | all
+  stage           String?  // starting | 1k-10k | 10k-100k | 100k+
+  audience        String?  // target viewer description
+  goals           String?  // grow | sell | authority | brand-deals
   scriptDelivered Boolean  @default(false)
+  reportToken     String?  @unique @default(cuid())
+  reportHtml      String?
   createdAt       DateTime @default(now())
 }
