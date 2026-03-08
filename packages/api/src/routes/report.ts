@@ -5,7 +5,7 @@ const router = Router();
 
 // GET /api/report/:token — serve stored HTML report (no auth required, token is the secret)
 router.get('/:token', async (req: Request, res: Response) => {
-  const { token } = req.params;
+  const token = req.params['token'] as string;
 
   const order = await prisma.conciergeOrder.findUnique({
     where: { reportToken: token },
