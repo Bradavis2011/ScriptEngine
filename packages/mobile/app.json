@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "ClipScript",
+    "slug": "clipscript",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "clipscript",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "backgroundColor": "#0B0B0D"
+    },
+    "ios": {
+      "bundleIdentifier": "com.clipscriptai.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "ClipScript needs camera access to film your teleprompter videos.",
+        "NSMicrophoneUsageDescription": "ClipScript needs microphone access to record audio with your videos.",
+        "NSPhotoLibraryAddUsageDescription": "ClipScript saves your filmed videos to your photo library."
+      }
+    },
+    "android": {
+      "package": "com.clipscriptai.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "ClipScript needs camera access to film your teleprompter videos.",
+          "microphonePermission": "ClipScript needs microphone access to record audio."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "ClipScript needs access to your photo library to save videos.",
+          "savePhotosPermission": "ClipScript needs permission to save videos to your library.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "clerkPublishableKey": "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY",
+      "apiUrl": "EXPO_PUBLIC_API_URL",
+      "eas": {
+        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+      }
+    }
+  }
+}
