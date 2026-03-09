@@ -20,9 +20,9 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "",
+        "appleId": "bradavis2011@gmail.com",
         "ascAppId": "",
-        "appleTeamId": ""
+        "appleTeamId": "7CY7Z4H53Z"
       },
       "android": {
         "serviceAccountKeyPath": ""
