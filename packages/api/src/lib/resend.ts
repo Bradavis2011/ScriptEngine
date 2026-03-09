@@ -9,7 +9,7 @@ function getResend(): Resend {
   }
   return _resend;
 }
-const FROM = process.env.RESEND_FROM_EMAIL ?? 'scripts@clipscriptai.com';
+const FROM = process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev';
 
 function viewReportBtn(reportUrl: string): string {
   return `
