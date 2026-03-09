@@ -451,7 +451,7 @@ export default function Home() {
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-sm">Founders Annual</span>
-                    <span className="text-xs font-bold bg-amber-500 text-black rounded-full px-2 py-0.5">First 100</span>
+                    <span className="inline-flex items-center justify-center text-xs font-bold bg-amber-500 text-black rounded-full px-2 py-0.5">First 100</span>
                   </div>
                   <span className="font-extrabold text-amber-500">$60<span className="text-xs font-normal text-muted-foreground">/yr</span></span>
                 </div>
