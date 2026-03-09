@@ -1,6 +1,13 @@
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+let _genAI: GoogleGenerativeAI | null = null;
+function getGenAI(): GoogleGenerativeAI {
+  if (!_genAI) {
+    if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not set');
+    _genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  }
+  return _genAI;
+}
 
 const SCRIPT_RESPONSE_SCHEMA = {
   type: SchemaType.OBJECT,
@@ -92,7 +99,7 @@ export interface ResearchBriefInput {
 }
 
 export async function generateResearchBrief(input: ResearchBriefInput): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  const model = getGenAI().getGenerativeModel({ model: 'gemini-2.5-flash' });
 
   const prompt = `You are a senior content strategist for short-form video creators. Your client has paid $50 for a professional content strategy brief.
 
@@ -153,7 +160,7 @@ Be SPECIFIC. Use the YouTube data. Write hooks that would actually make someone 
 }
 
 export async function generateScript(input: GenerateScriptInput): Promise<ScriptData> {
-  const model = genAI.getGenerativeModel({
+  const model = getGenAI().getGenerativeModel({
     model: 'gemini-2.5-flash',
     generationConfig: {
       responseMimeType: 'application/json',
