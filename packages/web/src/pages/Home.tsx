@@ -292,8 +292,8 @@ export default function Home() {
         {/* Nav */}
         <nav className="relative mx-auto flex max-w-5xl items-center justify-between px-4 py-4 md:px-8">
           <div className="flex items-center gap-2">
-            <img src="/icon.png" alt="ClipScript logo" className="h-8 w-8 rounded-lg" />
-            <span className="font-display text-lg font-bold">ClipScript</span>
+            <img src="/icon.png" alt="ClipScript icon" className="h-8 w-8 rounded-lg" />
+            <img src="/logo.png" alt="ClipScript" className="h-7" />
           </div>
           <Button size="sm" onClick={() => document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })}>
             Get Scripts
