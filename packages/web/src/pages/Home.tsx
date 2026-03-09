@@ -488,6 +488,11 @@ export default function Home() {
         <footer className="text-center text-xs text-muted-foreground py-8 border-t border-border/40">
           <p>Questions? Email <a href="mailto:hello@clipscriptai.com" className="underline">hello@clipscriptai.com</a></p>
           <p className="mt-2">ClipScript — scripts built for filming, not for reading</p>
+          <div className="mt-4 flex justify-center gap-5">
+            <a href="/faq" className="underline hover:text-foreground">FAQ</a>
+            <a href="/privacy" className="underline hover:text-foreground">Privacy Policy</a>
+            <a href="/terms" className="underline hover:text-foreground">Terms of Service</a>
+          </div>
         </footer>
       </div>
     </main>
