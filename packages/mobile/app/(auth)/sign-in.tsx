@@ -1,12 +1,32 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert,
+  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert, Image,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { useSignIn, useSignUp } from '@clerk/clerk-expo';
 import { colors, spacing, radius } from '@/lib/theme';
 
+// Gradient: teal → red (matches landing page hero-gradient-text)
+const GRAD_START = '#03EDD6'; // hsl(175 97% 55%)
+const GRAD_END   = '#FD1741'; // hsl(348 99% 59%)
+
 type Mode = 'sign-in' | 'sign-up' | 'verify';
+
+function GradientText({ text, style }: { text: string; style?: object }) {
+  return (
+    <MaskedView maskElement={<Text style={[style, { backgroundColor: 'transparent' }]}>{text}</Text>}>
+      <LinearGradient
+        colors={[GRAD_START, GRAD_END]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <Text style={[style, { opacity: 0 }]}>{text}</Text>
+      </LinearGradient>
+    </MaskedView>
+  );
+}
 
 export default function SignIn() {
   const { signIn, setActive: setSignInActive, isLoaded: signInLoaded } = useSignIn();
@@ -63,24 +83,42 @@ export default function SignIn() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      {/* Subtle teal glow orb top-right */}
+      <View style={styles.orbTeal} />
+      {/* Subtle red glow orb bottom-left */}
+      <View style={styles.orbRed} />
+
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" bounces={false}>
         {/* Logo */}
         <View style={styles.logoRow}>
-          <View style={styles.logoBox}>
-            <Text style={styles.logoText}>CS</Text>
-          </View>
-          <Text style={styles.brand}>ClipScript</Text>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={styles.icon}
+            resizeMode="contain"
+          />
+          <Image
+            source={require('../../assets/logo.png')}
+            style={styles.logoImg}
+            resizeMode="contain"
+          />
         </View>
 
-        <Text style={styles.title}>
-          {mode === 'sign-in' ? 'Welcome back' : mode === 'sign-up' ? 'Create account' : 'Check your email'}
-        </Text>
+        {/* Hero */}
+        <Text style={styles.heroPre}>Write it.</Text>
+        <GradientText text="Film it." style={styles.heroGradient} />
+        <Text style={styles.heroPre}>Post it.</Text>
+
         <Text style={styles.subtitle}>
           {mode === 'verify'
             ? `Enter the code we sent to ${email}`
-            : 'Scripts, teleprompter, and filming — all in one place.'}
+            : mode === 'sign-in'
+            ? 'Welcome back. Your scripts are waiting.'
+            : 'Create your account to start scripting.'}
         </Text>
+
+        {/* Teal divider */}
+        <View style={styles.divider} />
 
         {mode !== 'verify' ? (
           <>
@@ -104,22 +142,30 @@ export default function SignIn() {
               autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
             />
             <TouchableOpacity
-              style={styles.btn}
               onPress={mode === 'sign-in' ? handleSignIn : handleSignUp}
               disabled={loading}
+              style={styles.btnWrapper}
             >
-              {loading ? (
-                <ActivityIndicator color={colors.background} />
-              ) : (
-                <Text style={styles.btnText}>{mode === 'sign-in' ? 'Sign In' : 'Create Account'}</Text>
-              )}
+              <LinearGradient
+                colors={[GRAD_START, GRAD_END]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.btn}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#0B0B0D" />
+                ) : (
+                  <Text style={styles.btnText}>{mode === 'sign-in' ? 'Sign In' : 'Create Account'}</Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.switchBtn}
               onPress={() => setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in')}
             >
               <Text style={styles.switchText}>
-                {mode === 'sign-in' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+                {mode === 'sign-in' ? "Don't have an account? " : 'Already have an account? '}
+                <Text style={styles.switchAccent}>{mode === 'sign-in' ? 'Sign up' : 'Sign in'}</Text>
               </Text>
             </TouchableOpacity>
           </>
@@ -134,15 +180,24 @@ export default function SignIn() {
               keyboardType="number-pad"
               maxLength={6}
             />
-            <TouchableOpacity style={styles.btn} onPress={handleVerify} disabled={loading}>
-              {loading ? (
-                <ActivityIndicator color={colors.background} />
-              ) : (
-                <Text style={styles.btnText}>Verify Email</Text>
-              )}
+            <TouchableOpacity onPress={handleVerify} disabled={loading} style={styles.btnWrapper}>
+              <LinearGradient
+                colors={[GRAD_START, GRAD_END]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.btn}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#0B0B0D" />
+                ) : (
+                  <Text style={styles.btnText}>Verify Email</Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity style={styles.switchBtn} onPress={() => setMode('sign-up')}>
-              <Text style={styles.switchText}>Go back</Text>
+              <Text style={styles.switchText}>
+                Go back
+              </Text>
             </TouchableOpacity>
           </>
         )}
@@ -153,16 +208,28 @@ export default function SignIn() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
+  // Ambient glow orbs — larger + higher opacity since RN can't blur like CSS
+  orbTeal: {
+    position: 'absolute', top: -120, left: -120,
+    width: 380, height: 380, borderRadius: 190,
+    backgroundColor: '#03EDD6', opacity: 0.14,
+  },
+  orbRed: {
+    position: 'absolute', top: -80, right: -80,
+    width: 340, height: 340, borderRadius: 170,
+    backgroundColor: '#FD1741', opacity: 0.12,
+  },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg },
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: spacing.xl },
-  logoBox: {
-    width: 44, height: 44, borderRadius: radius.md,
-    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+  icon: { width: 36, height: 36, borderRadius: radius.md },
+  logoImg: { height: 26, width: 130 },
+  heroPre: { fontSize: 38, fontWeight: '800', color: colors.white, lineHeight: 48 },
+  heroGradient: { fontSize: 38, fontWeight: '800', lineHeight: 48 },
+  subtitle: { fontSize: 15, color: colors.neutral, marginTop: spacing.md, lineHeight: 22 },
+  divider: {
+    height: 1, marginVertical: spacing.xl,
+    backgroundColor: GRAD_START, opacity: 0.3,
   },
-  logoText: { fontSize: 16, fontWeight: '800', color: colors.background },
-  brand: { fontSize: 22, fontWeight: '800', color: colors.white },
-  title: { fontSize: 28, fontWeight: '800', color: colors.white, marginBottom: spacing.sm },
-  subtitle: { fontSize: 15, color: colors.neutral, marginBottom: spacing.xl, lineHeight: 22 },
   input: {
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -174,14 +241,10 @@ const styles = StyleSheet.create({
     color: colors.white,
     marginBottom: spacing.md,
   },
-  btn: {
-    backgroundColor: colors.accent,
-    borderRadius: radius.md,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  btnText: { fontSize: 16, fontWeight: '700', color: colors.background },
+  btnWrapper: { marginTop: spacing.sm, borderRadius: radius.md, overflow: 'hidden' },
+  btn: { borderRadius: radius.md, paddingVertical: 16, alignItems: 'center' },
+  btnText: { fontSize: 16, fontWeight: '800', color: '#0B0B0D' },
   switchBtn: { marginTop: spacing.lg, alignItems: 'center' },
   switchText: { fontSize: 14, color: colors.neutral },
+  switchAccent: { color: GRAD_START, fontWeight: '700' },
 });

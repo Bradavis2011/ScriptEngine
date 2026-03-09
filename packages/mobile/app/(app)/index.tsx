@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@clerk/clerk-expo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { getTodayScripts, ApiScript } from '@/lib/api';
 import { colors, spacing, radius, scriptTypeColors, scriptTypeLabels } from '@/lib/theme';
@@ -25,10 +26,13 @@ export default function TodayScreen() {
 
   const isOnboardingNeeded = isError && (error as Error).message?.includes('Tenant not found');
 
-  if (isOnboardingNeeded) {
-    router.replace('/onboarding');
-    return null;
-  }
+  useEffect(() => {
+    if (isOnboardingNeeded) {
+      router.replace('/onboarding');
+    }
+  }, [isOnboardingNeeded]);
+
+  if (isOnboardingNeeded) return null;
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>

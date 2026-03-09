@@ -2,6 +2,7 @@ import { Tabs, useRouter } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { useEffect } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/lib/theme';
 
@@ -20,6 +21,9 @@ function CameraTabIcon({ color, focused }: { color: string; focused: boolean }) 
 export default function AppLayout() {
   const { isSignedIn, isLoaded } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  const tabBarHeight = (Platform.OS === 'ios' ? 60 : 56) + insets.bottom;
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -31,7 +35,7 @@ export default function AppLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { height: tabBarHeight, paddingBottom: insets.bottom }],
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.muted,
         tabBarLabelStyle: styles.tabLabel,
@@ -94,8 +98,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    height: Platform.OS === 'ios' ? 88 : 64,
-    paddingBottom: Platform.OS === 'ios' ? 28 : 8,
     elevation: 0,
     position: 'absolute',
   },

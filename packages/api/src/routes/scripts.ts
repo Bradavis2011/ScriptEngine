@@ -73,7 +73,15 @@ router.post('/generate', requireAuth, async (req, res: Response) => {
     additionalContext,
   };
 
-  const scriptData = await generateScript(input);
+  let scriptData;
+  try {
+    scriptData = await generateScript(input);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[scripts/generate] Gemini error:', message);
+    res.status(502).json({ error: 'Script generation failed', detail: message });
+    return;
+  }
 
   const script = await prisma.script.create({
     data: {
