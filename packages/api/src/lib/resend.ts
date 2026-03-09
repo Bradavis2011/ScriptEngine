@@ -158,6 +158,45 @@ export async function sendConciergeDelivery({
 }
 
 // ---------------------------------------------------------------------------
+// Failure alert — paid order failed to generate/deliver
+// ---------------------------------------------------------------------------
+export async function sendFailureAlert({
+  orderEmail,
+  stripePaymentId,
+  orderType,
+  niche,
+  topic,
+  errorMessage,
+}: {
+  orderEmail: string;
+  stripePaymentId: string;
+  orderType: string;
+  niche: string;
+  topic: string;
+  errorMessage: string;
+}) {
+  const adminEmail = process.env.ADMIN_EMAIL ?? FROM;
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to: adminEmail,
+      subject: `[ClipScript] DELIVERY FAILED — ${orderType} order for ${orderEmail}`,
+      html: `
+      <p><strong>⚠️ A paid order failed to deliver.</strong></p>
+      <p><strong>Customer email:</strong> ${orderEmail}</p>
+      <p><strong>Order type:</strong> ${orderType}</p>
+      <p><strong>Niche:</strong> ${niche}</p>
+      <p><strong>Topic:</strong> ${topic}</p>
+      <p><strong>Stripe Payment ID:</strong> ${stripePaymentId}</p>
+      <p><strong>Error:</strong> ${errorMessage}</p>
+      <p style="color:#888;font-size:13px;">The customer was charged but received nothing. Manual delivery or refund required.</p>`,
+    });
+  } catch (alertErr) {
+    console.error('Failed to send failure alert email:', alertErr);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Internal alert — concierge order notification
 // ---------------------------------------------------------------------------
 export async function sendInternalConciergeAlert({

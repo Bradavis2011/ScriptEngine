@@ -9,6 +9,7 @@ import {
   sendPackDelivery,
   sendConciergeDelivery,
   sendInternalConciergeAlert,
+  sendFailureAlert,
 } from '../lib/resend';
 
 const router = Router();
@@ -107,6 +108,14 @@ router.post('/stripe', async (req: Request, res: Response) => {
       });
     } catch (err) {
       console.error('Pack generation failed:', err);
+      await sendFailureAlert({
+        orderEmail: email,
+        stripePaymentId,
+        orderType,
+        niche,
+        topic,
+        errorMessage: err instanceof Error ? err.message : String(err),
+      });
     }
   } else {
     // Concierge — full research brief
@@ -161,6 +170,14 @@ router.post('/stripe', async (req: Request, res: Response) => {
       });
     } catch (genErr) {
       console.error('Concierge generation failed:', genErr);
+      await sendFailureAlert({
+        orderEmail: email,
+        stripePaymentId,
+        orderType,
+        niche,
+        topic,
+        errorMessage: genErr instanceof Error ? genErr.message : String(genErr),
+      });
     }
   }
 });

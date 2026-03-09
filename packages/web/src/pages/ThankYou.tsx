@@ -1,9 +1,12 @@
 import { CheckCircle, Rocket } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 export default function ThankYou() {
+  const [searchParams] = useSearchParams();
+  const type = searchParams.get("type");
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md border-border/70 bg-card/90">
@@ -15,18 +18,30 @@ export default function ThankYou() {
           </p>
 
           <ul className="mt-6 space-y-3 text-left text-sm text-muted-foreground">
-            <li className="flex items-start gap-3">
-              <Rocket className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <span>
-                <strong className="text-foreground">If you ordered Concierge:</strong> your script will be in your inbox within 24 hours.
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <Rocket className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <span>
-                <strong className="text-foreground">Founders / Pro:</strong> the app is in Founders Beta — you'll get early access as soon as it's ready (targeting within 30 days).
-              </span>
-            </li>
+            {type === "pack" && (
+              <li className="flex items-start gap-3">
+                <Rocket className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span>
+                  <strong className="text-foreground">Your 5 scripts are being generated</strong> — check your inbox in a few minutes. They'll include teleprompter text, captions, and hashtags, ready to film.
+                </span>
+              </li>
+            )}
+            {type === "concierge" && (
+              <li className="flex items-start gap-3">
+                <Rocket className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span>
+                  <strong className="text-foreground">Your strategy brief is being built</strong> — you'll receive a ready-to-film script plus your full research brief by email shortly. Reply to that email for your 2 included tweaks.
+                </span>
+              </li>
+            )}
+            {type !== "pack" && type !== "concierge" && (
+              <li className="flex items-start gap-3">
+                <Rocket className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span>
+                  <strong className="text-foreground">Founders / Pro:</strong> the app is in Founders Beta — you'll get early access as soon as it's ready (targeting within 30 days).
+                </span>
+              </li>
+            )}
             <li className="flex items-start gap-3">
               <Rocket className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <span>
