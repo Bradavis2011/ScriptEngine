@@ -4,29 +4,14 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert, Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import MaskedView from '@react-native-masked-view/masked-view';
 import { useSignIn, useSignUp } from '@clerk/clerk-expo';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { colors, spacing, radius } from '@/lib/theme';
 
-// Gradient: teal → red (matches landing page hero-gradient-text)
-const GRAD_START = '#03EDD6'; // hsl(175 97% 55%)
-const GRAD_END   = '#FD1741'; // hsl(348 99% 59%)
+const TEAL = '#03EDD6';
+const RED  = '#FD1741';
 
 type Mode = 'sign-in' | 'sign-up' | 'verify';
-
-function GradientText({ text, style }: { text: string; style?: object }) {
-  return (
-    <MaskedView maskElement={<Text style={[style, { backgroundColor: 'transparent' }]}>{text}</Text>}>
-      <LinearGradient
-        colors={[GRAD_START, GRAD_END]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <Text style={[style, { opacity: 0 }]}>{text}</Text>
-      </LinearGradient>
-    </MaskedView>
-  );
-}
 
 export default function SignIn() {
   const { signIn, setActive: setSignInActive, isLoaded: signInLoaded } = useSignIn();
@@ -37,6 +22,51 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handleAppleSignIn = async () => {
+    setLoading(true);
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      // Try sign-in first (existing user)
+      try {
+        const result = await signIn!.create({
+          strategy: 'oauth_token',
+          provider: 'apple',
+          token: credential.identityToken!,
+        });
+        if (result.status === 'complete') {
+          await setSignInActive!({ session: result.createdSessionId });
+        }
+      } catch (signInErr: any) {
+        // New user — create account
+        if (signInErr?.errors?.[0]?.code === 'form_identifier_not_found') {
+          await signUp!.create({
+            strategy: 'oauth_token',
+            provider: 'apple',
+            token: credential.identityToken!,
+            ...(credential.email && { emailAddress: credential.email }),
+            ...(credential.fullName?.givenName && { firstName: credential.fullName.givenName }),
+            ...(credential.fullName?.familyName && { lastName: credential.fullName.familyName }),
+          });
+          await setSignUpActive!({ session: signUp!.createdSessionId });
+        } else {
+          throw signInErr;
+        }
+      }
+    } catch (e: any) {
+      if (e.code !== 'ERR_REQUEST_CANCELED') {
+        Alert.alert('Apple Sign In failed', e?.errors?.[0]?.message ?? e.message ?? 'Something went wrong.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignIn = async () => {
     if (!signInLoaded) return;
@@ -84,29 +114,31 @@ export default function SignIn() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      {/* Subtle teal glow orb top-right */}
+      {/* Teal orb top-left, red orb top-right — matches landing page */}
       <View style={styles.orbTeal} />
-      {/* Subtle red glow orb bottom-left */}
       <View style={styles.orbRed} />
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" bounces={false}>
-        {/* Logo */}
+        {/* Logo row — icon.png + logo.png, same as landing page nav */}
         <View style={styles.logoRow}>
-          <Image
-            source={require('../../assets/icon.png')}
-            style={styles.icon}
-            resizeMode="contain"
-          />
-          <Image
-            source={require('../../assets/logo.png')}
-            style={styles.logoImg}
-            resizeMode="contain"
-          />
+          <Image source={require('../../assets/icon.png')} style={styles.icon} resizeMode="contain" />
+          <Image source={require('../../assets/logo.png')} style={styles.logoImg} resizeMode="contain" />
         </View>
 
-        {/* Hero */}
+        {/* Kicker pill */}
+        <View style={styles.kickerPill}>
+          <View style={styles.pulseDot} />
+          <Text style={styles.kickerText}>AI-POWERED SCRIPTS</Text>
+        </View>
+
+        {/* Hero — "Film it." uses teal+red split to simulate gradient without MaskedView */}
         <Text style={styles.heroPre}>Write it.</Text>
-        <GradientText text="Film it." style={styles.heroGradient} />
+        <View style={styles.heroFilmRow}>
+          <Text style={[styles.heroFilm, { color: TEAL }]}>Fi</Text>
+          <Text style={[styles.heroFilm, { color: '#7DEBB8' }]}>lm</Text>
+          <Text style={[styles.heroFilm, { color: '#C04E7C' }]}> it</Text>
+          <Text style={[styles.heroFilm, { color: RED }]}>.</Text>
+        </View>
         <Text style={styles.heroPre}>Post it.</Text>
 
         <Text style={styles.subtitle}>
@@ -117,8 +149,13 @@ export default function SignIn() {
             : 'Create your account to start scripting.'}
         </Text>
 
-        {/* Teal divider */}
-        <View style={styles.divider} />
+        {/* Divider with gradient line */}
+        <LinearGradient
+          colors={[TEAL, RED]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.divider}
+        />
 
         {mode !== 'verify' ? (
           <>
@@ -147,16 +184,15 @@ export default function SignIn() {
               style={styles.btnWrapper}
             >
               <LinearGradient
-                colors={[GRAD_START, GRAD_END]}
+                colors={[TEAL, RED]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.btn}
               >
-                {loading ? (
-                  <ActivityIndicator color="#0B0B0D" />
-                ) : (
-                  <Text style={styles.btnText}>{mode === 'sign-in' ? 'Sign In' : 'Create Account'}</Text>
-                )}
+                {loading
+                  ? <ActivityIndicator color="#0B0B0D" />
+                  : <Text style={styles.btnText}>{mode === 'sign-in' ? 'Sign In' : 'Create Account'}</Text>
+                }
               </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity
@@ -168,6 +204,23 @@ export default function SignIn() {
                 <Text style={styles.switchAccent}>{mode === 'sign-in' ? 'Sign up' : 'Sign in'}</Text>
               </Text>
             </TouchableOpacity>
+
+            {Platform.OS === 'ios' && (
+              <>
+                <View style={styles.orRow}>
+                  <View style={styles.orLine} />
+                  <Text style={styles.orText}>or</Text>
+                  <View style={styles.orLine} />
+                </View>
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                  cornerRadius={radius.md}
+                  style={styles.appleBtn}
+                  onPress={handleAppleSignIn}
+                />
+              </>
+            )}
           </>
         ) : (
           <>
@@ -182,22 +235,19 @@ export default function SignIn() {
             />
             <TouchableOpacity onPress={handleVerify} disabled={loading} style={styles.btnWrapper}>
               <LinearGradient
-                colors={[GRAD_START, GRAD_END]}
+                colors={[TEAL, RED]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.btn}
               >
-                {loading ? (
-                  <ActivityIndicator color="#0B0B0D" />
-                ) : (
-                  <Text style={styles.btnText}>Verify Email</Text>
-                )}
+                {loading
+                  ? <ActivityIndicator color="#0B0B0D" />
+                  : <Text style={styles.btnText}>Verify Email</Text>
+                }
               </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity style={styles.switchBtn} onPress={() => setMode('sign-up')}>
-              <Text style={styles.switchText}>
-                Go back
-              </Text>
+              <Text style={styles.switchText}>Go back</Text>
             </TouchableOpacity>
           </>
         )}
@@ -208,43 +258,50 @@ export default function SignIn() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  // Ambient glow orbs — larger + higher opacity since RN can't blur like CSS
   orbTeal: {
     position: 'absolute', top: -120, left: -120,
     width: 380, height: 380, borderRadius: 190,
-    backgroundColor: '#03EDD6', opacity: 0.14,
+    backgroundColor: TEAL, opacity: 0.14,
   },
   orbRed: {
     position: 'absolute', top: -80, right: -80,
     width: 340, height: 340, borderRadius: 170,
-    backgroundColor: '#FD1741', opacity: 0.12,
+    backgroundColor: RED, opacity: 0.12,
   },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg },
+  scroll: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg, alignItems: 'center' },
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: spacing.xl },
   icon: { width: 36, height: 36, borderRadius: radius.md },
   logoImg: { height: 26, width: 130 },
-  heroPre: { fontSize: 38, fontWeight: '800', color: colors.white, lineHeight: 48 },
-  heroGradient: { fontSize: 38, fontWeight: '800', lineHeight: 48 },
-  subtitle: { fontSize: 15, color: colors.neutral, marginTop: spacing.md, lineHeight: 22 },
-  divider: {
-    height: 1, marginVertical: spacing.xl,
-    backgroundColor: GRAD_START, opacity: 0.3,
+  kickerPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderWidth: 1, borderColor: TEAL + '66',
+    borderRadius: 99, paddingHorizontal: 12, paddingVertical: 6,
+    marginBottom: spacing.lg,
   },
+  pulseDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: TEAL },
+  kickerText: { fontSize: 10, fontWeight: '700', letterSpacing: 1.5, color: TEAL, textTransform: 'uppercase' },
+  heroPre: { fontSize: 44, fontWeight: '800', color: colors.white, lineHeight: 54, textAlign: 'center' },
+  heroFilmRow: { flexDirection: 'row', justifyContent: 'center', lineHeight: 54 },
+  heroFilm: { fontSize: 44, fontWeight: '800', lineHeight: 54 },
+  subtitle: { fontSize: 15, color: colors.neutral, marginTop: spacing.md, lineHeight: 22, textAlign: 'center' },
+  divider: { height: 1, marginVertical: spacing.xl, alignSelf: 'stretch', opacity: 0.4 },
   input: {
+    alignSelf: 'stretch',
     backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: colors.white,
+    paddingHorizontal: spacing.md, paddingVertical: 14,
+    fontSize: 15, color: colors.white,
     marginBottom: spacing.md,
   },
-  btnWrapper: { marginTop: spacing.sm, borderRadius: radius.md, overflow: 'hidden' },
+  btnWrapper: { alignSelf: 'stretch', marginTop: spacing.sm, borderRadius: radius.md, overflow: 'hidden' },
   btn: { borderRadius: radius.md, paddingVertical: 16, alignItems: 'center' },
   btnText: { fontSize: 16, fontWeight: '800', color: '#0B0B0D' },
   switchBtn: { marginTop: spacing.lg, alignItems: 'center' },
   switchText: { fontSize: 14, color: colors.neutral },
-  switchAccent: { color: GRAD_START, fontWeight: '700' },
+  switchAccent: { color: TEAL, fontWeight: '700' },
+  orRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', marginTop: spacing.xl, gap: spacing.sm },
+  orLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  orText: { fontSize: 12, color: colors.muted, fontWeight: '600' },
+  appleBtn: { alignSelf: 'stretch', height: 50, marginTop: spacing.md },
 });
