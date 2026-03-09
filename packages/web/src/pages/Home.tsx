@@ -432,26 +432,24 @@ export default function Home() {
               </ul>
 
               {/* Monthly option */}
-              <div className="rounded-lg border border-border p-3 mb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-sm">Monthly</span>
-                  <span className="font-extrabold">$7<span className="text-xs font-normal text-muted-foreground">/mo</span></span>
-                </div>
-                <Button size="sm" variant="outline" className="w-full"
-                  onClick={() => {
-                    if (STRIPE_PRO_MONTHLY_URL) window.location.href = STRIPE_PRO_MONTHLY_URL;
-                    else toast.error("Coming soon — email hello@clipscriptai.com");
-                  }}>
-                  Subscribe Monthly
-                </Button>
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-sm">Monthly</span>
+                <span className="font-extrabold">$7<span className="text-xs font-normal text-muted-foreground">/mo</span></span>
               </div>
+              <Button size="sm" variant="outline" className="w-full mb-4"
+                onClick={() => {
+                  if (STRIPE_PRO_MONTHLY_URL) window.location.href = STRIPE_PRO_MONTHLY_URL;
+                  else toast.error("Coming soon — email hello@clipscriptai.com");
+                }}>
+                Subscribe Monthly
+              </Button>
 
               {/* Founders option */}
-              <div className="rounded-lg border border-amber-500/50 bg-amber-500/5 p-3">
+              <div className="border-t border-amber-500/30 pt-3">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-sm">Founders Annual</span>
-                    <span className="inline-flex items-center justify-center text-xs font-bold bg-amber-500 text-black rounded-full px-2 py-0.5">First 100</span>
+                    <span className="inline-flex items-center justify-center text-xs font-bold leading-none bg-amber-500 text-black rounded-full px-2.5 py-1 whitespace-nowrap">First 100</span>
                   </div>
                   <span className="font-extrabold text-amber-500">$60<span className="text-xs font-normal text-muted-foreground">/yr</span></span>
                 </div>
