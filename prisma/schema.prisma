@@ -59,6 +59,7 @@ model ConciergeOrder {
   topic           String?
   orderType       String   @default("concierge") // pack | concierge
   // concierge extra fields
+  brief           String?  // raw brief from customer form
   platform        String?  // tiktok | reels | shorts | all
   stage           String?  // starting | 1k-10k | 10k-100k | 100k+
   audience        String?  // target viewer description

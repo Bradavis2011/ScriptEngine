@@ -19,11 +19,11 @@ router.use(express.raw({ type: 'application/json' }));
 const FRONTEND_URL = process.env.FRONTEND_URL ?? 'https://clipscriptai.com';
 
 const PACK_SCRIPT_TYPES = [
+  'niche_tip',
+  'data_drop',
+  'trend_take',
   'niche_tip_basic',
-  'niche_tip_basic',
-  'niche_tip_basic',
-  'niche_tip_basic',
-  'niche_tip_basic',
+  'data_drop',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -68,7 +68,7 @@ router.post('/stripe', async (req: Request, res: Response) => {
   await prisma.conciergeOrder.upsert({
     where: { stripePaymentId },
     update: {},
-    create: { stripePaymentId, email, niche, topic, orderType, platform, stage, audience, goals },
+    create: { stripePaymentId, email, niche, topic, orderType, brief, platform, stage, audience, goals },
   });
 
   // Fetch the reportToken for building the report URL
@@ -158,7 +158,7 @@ router.post('/stripe', async (req: Request, res: Response) => {
 
       await prisma.conciergeOrder.update({
         where: { stripePaymentId },
-        data: { scriptDelivered: true, reportHtml, platform, stage, audience, goals },
+        data: { scriptDelivered: true, reportHtml, brief, platform, stage, audience, goals },
       });
 
       await sendConciergeDelivery({
