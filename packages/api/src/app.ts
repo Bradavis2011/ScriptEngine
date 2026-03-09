@@ -3,6 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import webhookRouter from './routes/webhooks';
+import tenantRouter from './routes/tenants';
+import scriptRouter from './routes/scripts';
+import seriesRouter from './routes/series';
 import checkoutRouter from './routes/checkout';
 import reportRouter from './routes/report';
 
@@ -35,6 +38,9 @@ export function createApp() {
   });
 
   // API routes
+  app.use('/api/tenants', tenantRouter);
+  app.use('/api/scripts', scriptRouter);
+  app.use('/api/series', seriesRouter);
   app.use('/api/checkout', checkoutRouter);
   app.use('/api/report', reportRouter);
 
