@@ -77,11 +77,24 @@ export interface ApiSeries {
   createdAt: string;
 }
 
+// ---------- Types ----------
+export interface ApiTenant {
+  id: string;
+  clerkUserId: string;
+  email: string;
+  niche: string;
+  tier: 'free' | 'pro' | 'founders' | 'team';
+  scriptsPerDay: number;
+  scriptsToday: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ---------- Tenants ----------
 export const createTenant = (data: { email: string; niche: string }, token: string) =>
-  request('/api/tenants', { method: 'POST', body: JSON.stringify(data), token });
+  request<ApiTenant>('/api/tenants', { method: 'POST', body: JSON.stringify(data), token });
 
-export const getMe = (token: string) => request('/api/tenants/me', { token });
+export const getMe = (token: string) => request<ApiTenant>('/api/tenants/me', { token });
 
 // ---------- Scripts ----------
 export const getScripts = (status: string, token: string) =>

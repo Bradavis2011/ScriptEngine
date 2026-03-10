@@ -33,7 +33,13 @@ router.get('/me', requireAuth, async (req, res: Response) => {
     return;
   }
 
-  res.json(tenant);
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const scriptsToday = await prisma.script.count({
+    where: { tenantId: tenant.id, createdAt: { gte: startOfDay } },
+  });
+
+  res.json({ ...tenant, scriptsToday });
 });
 
 export default router;

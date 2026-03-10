@@ -37,6 +37,12 @@
       "expo-secure-store",
       "expo-apple-authentication",
       [
+        "react-native-purchases",
+        {
+          "androidPackage": "com.clipscriptai.app"
+        }
+      ],
+      [
         "expo-camera",
         {
           "cameraPermission": "ClipScript needs camera access to film your teleprompter videos.",

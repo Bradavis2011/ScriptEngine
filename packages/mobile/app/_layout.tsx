@@ -3,10 +3,11 @@ import * as SecureStore from 'expo-secure-store';
 import * as SplashScreen from 'expo-splash-screen';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Slot, useRouter, useSegments } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, Text, View } from 'react-native';
+import { initializePurchases } from '@/lib/purchases';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -27,23 +28,32 @@ const tokenCache = {
 const queryClient = new QueryClient();
 
 function AuthGate() {
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isSignedIn, isLoaded, userId } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const purchasesInitialized = useRef(false);
 
   useEffect(() => {
     if (!isLoaded) return;
-
     SplashScreen.hideAsync();
-
     const inAuth = segments[0] === '(auth)';
-
     if (!isSignedIn && !inAuth) {
       router.replace('/(auth)/sign-in');
     } else if (isSignedIn && inAuth) {
       router.replace('/(app)');
     }
   }, [isSignedIn, isLoaded, segments]);
+
+  // Initialize RevenueCat once when user logs in
+  useEffect(() => {
+    if (isSignedIn && userId && !purchasesInitialized.current) {
+      purchasesInitialized.current = true;
+      initializePurchases(userId);
+    }
+    if (!isSignedIn) {
+      purchasesInitialized.current = false;
+    }
+  }, [isSignedIn, userId]);
 
   return <Slot />;
 }

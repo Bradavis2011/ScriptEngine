@@ -44,6 +44,22 @@ router.post('/generate', requireAuth, async (req, res: Response) => {
     return;
   }
 
+  // Quota enforcement
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const todayCount = await prisma.script.count({
+    where: { tenantId: tenant.id, createdAt: { gte: startOfDay } },
+  });
+  if (todayCount >= tenant.scriptsPerDay) {
+    res.status(429).json({
+      error: `Daily limit reached. You've used ${todayCount} of ${tenant.scriptsPerDay} script${tenant.scriptsPerDay !== 1 ? 's' : ''} today.`,
+      limit: tenant.scriptsPerDay,
+      used: todayCount,
+      tier: tenant.tier,
+    });
+    return;
+  }
+
   const { scriptType, seriesId, additionalContext } = req.body as {
     scriptType?: ScriptType;
     seriesId?: string;

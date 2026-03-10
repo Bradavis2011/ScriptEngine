@@ -8,17 +8,18 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { generateScript, getSeries, ApiSeries } from '@/lib/api';
+import { generateScript, getSeries, getMe, ApiSeries } from '@/lib/api';
 import { colors, spacing, radius } from '@/lib/theme';
 import { GlowOrbs } from '@/components/GlowOrbs';
+import { PaywallSheet } from '@/components/PaywallSheet';
 
 const TEAL = '#03EDD6';
 
 const SCRIPT_TYPES = [
-  { value: 'niche_tip', label: 'Niche Tip', desc: '3 actionable tips' },
-  { value: 'data_drop', label: 'Data Drop', desc: 'Surprising stat or fact' },
-  { value: 'trend_take', label: 'Trend Take', desc: 'Hot take on a trend' },
-  { value: 'series_episode', label: 'Series Episode', desc: 'Part of an ongoing series' },
+  { value: 'niche_tip',       label: 'Niche Tip',      desc: '3 actionable tips' },
+  { value: 'data_drop',       label: 'Data Drop',       desc: 'Surprising stat or fact' },
+  { value: 'trend_take',      label: 'Trend Take',      desc: 'Hot take on a trend' },
+  { value: 'series_episode',  label: 'Series Episode',  desc: 'Part of an ongoing series' },
 ] as const;
 
 type ScriptTypeValue = (typeof SCRIPT_TYPES)[number]['value'];
@@ -38,6 +39,7 @@ export default function GenerateScreen() {
   const [context, setContext] = useState('');
   const [loading, setLoading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [paywallVisible, setPaywallVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -50,15 +52,23 @@ export default function GenerateScreen() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [loading]);
 
-  const { data: series = [] } = useQuery({
-    queryKey: ['series'],
-    queryFn: async () => {
-      const token = await getToken();
-      return getSeries(token!);
-    },
+  const { data: me } = useQuery({
+    queryKey: ['me'],
+    queryFn: async () => { const t = await getToken(); return getMe(t!); },
   });
 
+  const { data: series = [] } = useQuery({
+    queryKey: ['series'],
+    queryFn: async () => { const t = await getToken(); return getSeries(t!); },
+  });
+
+  const scriptsToday   = me?.scriptsToday   ?? 0;
+  const scriptsPerDay  = me?.scriptsPerDay  ?? 1;
+  const scriptsLeft    = Math.max(0, scriptsPerDay - scriptsToday);
+  const atLimit        = scriptsLeft === 0;
+
   const handleGenerate = async () => {
+    if (atLimit) { setPaywallVisible(true); return; }
     setLoading(true);
     try {
       const token = await getToken();
@@ -72,11 +82,21 @@ export default function GenerateScreen() {
       );
       qc.invalidateQueries({ queryKey: ['scripts'] });
       qc.invalidateQueries({ queryKey: ['today'] });
+      qc.invalidateQueries({ queryKey: ['me'] });
       router.replace(`/(app)/script/${script.id}`);
     } catch (e: any) {
-      Alert.alert('Generation failed', e.message ?? 'Try again in a moment.');
+      if (e.message?.includes('Daily limit')) {
+        setPaywallVisible(true);
+      } else {
+        Alert.alert('Generation failed', e.message ?? 'Try again in a moment.');
+      }
       setLoading(false);
     }
+  };
+
+  const handleUpgraded = () => {
+    setPaywallVisible(false);
+    qc.invalidateQueries({ queryKey: ['me'] });
   };
 
   return (
@@ -95,7 +115,33 @@ export default function GenerateScreen() {
           <View style={{ width: 36 }} />
         </View>
 
-        <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: tabBarHeight + 24 }]} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingBottom: tabBarHeight + 24 }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Daily quota indicator */}
+          {me && (
+            <View style={[styles.quotaBar, atLimit && styles.quotaBarLimit]}>
+              <View style={styles.quotaLeft}>
+                <Ionicons
+                  name={atLimit ? 'lock-closed' : 'sparkles-outline'}
+                  size={14}
+                  color={atLimit ? colors.warning : TEAL}
+                />
+                <Text style={[styles.quotaText, atLimit && styles.quotaTextLimit]}>
+                  {atLimit
+                    ? `Daily limit reached — ${scriptsPerDay}/day on ${me.tier} plan`
+                    : `${scriptsLeft} script${scriptsLeft !== 1 ? 's' : ''} left today`}
+                </Text>
+              </View>
+              {atLimit && (
+                <TouchableOpacity onPress={() => setPaywallVisible(true)}>
+                  <Text style={styles.upgradeLink}>Upgrade</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           <Text style={styles.sectionLabel}>Script type</Text>
           <View style={styles.typeGrid}>
             {SCRIPT_TYPES.map((t) => (
@@ -138,7 +184,9 @@ export default function GenerateScreen() {
             </View>
           )}
 
-          <Text style={styles.sectionLabel}>Additional context <Text style={styles.optional}>(optional)</Text></Text>
+          <Text style={styles.sectionLabel}>
+            Additional context <Text style={styles.optional}>(optional)</Text>
+          </Text>
           <TextInput
             style={styles.contextInput}
             placeholder={'e.g. "focus on beginner mistakes" or "use a personal story hook"'}
@@ -151,7 +199,7 @@ export default function GenerateScreen() {
           />
 
           <TouchableOpacity
-            style={[styles.genBtn, loading && styles.genBtnDisabled]}
+            style={[styles.genBtn, (loading || atLimit) && styles.genBtnDisabled]}
             onPress={handleGenerate}
             disabled={loading}
           >
@@ -160,12 +208,23 @@ export default function GenerateScreen() {
                 <ActivityIndicator color="#0B0B0D" size="small" />
                 <Text style={styles.genBtnText}>Generating… {elapsed}s</Text>
               </>
+            ) : atLimit ? (
+              <>
+                <Ionicons name="lock-closed" size={16} color="#0B0B0D" />
+                <Text style={styles.genBtnText}>Upgrade to Generate More</Text>
+              </>
             ) : (
               <Text style={styles.genBtnText}>Generate Script</Text>
             )}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <PaywallSheet
+        visible={paywallVisible}
+        onClose={() => setPaywallVisible(false)}
+        onUpgraded={handleUpgraded}
+      />
     </SafeAreaView>
   );
 }
@@ -183,6 +242,22 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 17, fontWeight: '700' },
   scroll: { padding: spacing.md, gap: spacing.sm },
+
+  quotaBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: TEAL + '18', borderRadius: radius.md,
+    borderWidth: 1, borderColor: TEAL + '44',
+    paddingHorizontal: spacing.md, paddingVertical: 10,
+  },
+  quotaBarLimit: {
+    backgroundColor: colors.warning + '15',
+    borderColor: colors.warning + '44',
+  },
+  quotaLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  quotaText: { fontSize: 13, fontWeight: '600', color: TEAL, flex: 1 },
+  quotaTextLimit: { color: colors.warning },
+  upgradeLink: { fontSize: 13, fontWeight: '700', color: colors.warning, textDecorationLine: 'underline' },
+
   sectionLabel: { fontSize: 12, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: spacing.md, marginBottom: spacing.sm },
   optional: { fontWeight: '400', textTransform: 'none' },
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
