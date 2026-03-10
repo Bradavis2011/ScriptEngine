@@ -197,6 +197,55 @@ export async function sendFailureAlert({
 }
 
 // ---------------------------------------------------------------------------
+// Feedback request — sent 7 days after pack delivery
+// ---------------------------------------------------------------------------
+export async function sendFeedbackRequest({
+  toEmail,
+  niche,
+  topic,
+  orderId,
+}: {
+  toEmail: string;
+  niche: string;
+  topic: string;
+  orderId: string;
+}) {
+  await getResend().emails.send({
+    from: FROM,
+    to: toEmail,
+    subject: `How did your scripts perform? (quick 30-sec update)`,
+    html: `
+    <div style="font-family:sans-serif;max-width:640px;margin:0 auto;color:#111;">
+      <h1 style="font-size:22px;margin-bottom:8px;">Quick check-in on your scripts</h1>
+      <p style="color:#555;font-size:15px;margin-bottom:16px;">
+        You got your ${niche} scripts${topic ? ` about "${topic}"` : ''} a week ago.
+        We'd love to know how they performed — it takes 30 seconds and helps us make
+        better scripts for everyone.
+      </p>
+
+      <div style="background:#f9f9f9;border-radius:12px;padding:20px;margin-bottom:20px;">
+        <p style="font-weight:600;margin:0 0 12px;">Just reply to this email with:</p>
+        <ul style="color:#555;margin:0;padding-left:20px;line-height:1.8;">
+          <li>Which scripts did you film? (all 5? just a few?)</li>
+          <li>Best performing script — how many views/likes?</li>
+          <li>Anything you'd change about the scripts?</li>
+        </ul>
+      </div>
+
+      <p style="color:#555;font-size:14px;">
+        Even a one-line reply helps. We use this to improve our script engine
+        so your next pack is even better.
+      </p>
+
+      <hr style="margin:28px 0;border:none;border-top:1px solid #e5e7eb;" />
+      <p style="color:#888;font-size:12px;">
+        ClipScript — <a href="mailto:hello@clipscriptai.com">hello@clipscriptai.com</a>
+      </p>
+    </div>`,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Internal alert — concierge order notification
 // ---------------------------------------------------------------------------
 export async function sendInternalConciergeAlert({

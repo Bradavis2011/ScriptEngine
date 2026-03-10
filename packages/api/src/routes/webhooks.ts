@@ -11,6 +11,7 @@ import {
   sendInternalConciergeAlert,
   sendFailureAlert,
 } from '../lib/resend';
+import { getActivePrompt } from '../lib/promptVersions';
 
 const router = Router();
 
@@ -82,14 +83,19 @@ router.post('/stripe', async (req: Request, res: Response) => {
 
   if (orderType === 'pack') {
     try {
+      // A/B test: each pack script uses dynamic prompt versioning (80/20 current/challenger)
       const scripts = await Promise.all(
-        PACK_SCRIPT_TYPES.map((scriptType) =>
-          generateScript({
-            niche: niche || 'general lifestyle',
-            scriptType,
-            additionalContext: topic ? `Focus on this topic: ${topic}` : undefined,
-          }),
-        ),
+        PACK_SCRIPT_TYPES.map(async (scriptType) => {
+          const { prompt } = await getActivePrompt(scriptType);
+          return generateScript(
+            {
+              niche: niche || 'general lifestyle',
+              scriptType,
+              additionalContext: topic ? `Focus on this topic: ${topic}` : undefined,
+            },
+            prompt,
+          );
+        }),
       );
 
       const reportHtml = renderPackReportHtml(scripts, niche || 'lifestyle', topic);
