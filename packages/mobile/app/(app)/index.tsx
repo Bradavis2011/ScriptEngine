@@ -93,7 +93,7 @@ export default function TodayScreen() {
             <View style={styles.empty}>
               <Ionicons name="sparkles-outline" size={48} color={colors.muted} />
               <Text style={styles.emptyTitle}>No scripts yet today</Text>
-              <Text style={styles.emptySub}>Scripts generate at 6AM — or tap Generate to make one now.</Text>
+              <Text style={styles.emptySub}>Tap Generate above to create your first script of the day.</Text>
               <TouchableOpacity style={styles.emptyBtn} onPress={() => router.push('/(app)/generate')}>
                 <Text style={styles.emptyBtnText}>Generate Now</Text>
               </TouchableOpacity>

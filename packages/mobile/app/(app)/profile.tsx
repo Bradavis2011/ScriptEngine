@@ -1,5 +1,5 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Image, Linking,
+  View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Image, Linking, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth, useUser } from '@clerk/clerk-expo';
@@ -14,7 +14,7 @@ export default function ProfileScreen() {
   const { user } = useUser();
 
   // Single fetch — derive all counts client-side
-  const { data: scripts = [] } = useQuery({
+  const { data: scripts = [], isLoading: statsLoading } = useQuery({
     queryKey: ['scripts', 'all'],
     queryFn: async () => { const t = await getToken(); return getAllScripts(t!); },
   });
@@ -64,7 +64,10 @@ export default function ProfileScreen() {
           {stats.map((s) => (
             <View key={s.label} style={styles.statCard}>
               <Ionicons name={s.icon} size={20} color={colors.accent} />
-              <Text style={styles.statValue}>{s.value}</Text>
+              {statsLoading
+                ? <ActivityIndicator size="small" color={colors.accent} style={{ marginVertical: 4 }} />
+                : <Text style={styles.statValue}>{s.value}</Text>
+              }
               <Text style={styles.statLabel}>{s.label}</Text>
             </View>
           ))}

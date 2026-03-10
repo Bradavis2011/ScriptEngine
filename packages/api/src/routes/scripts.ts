@@ -21,8 +21,9 @@ router.get('/', requireAuth, async (req, res: Response) => {
     return;
   }
 
+  const VALID_STATUSES = ['ready', 'filmed', 'posted'];
   const where: Record<string, unknown> = { tenantId: tenant.id };
-  if (status && typeof status === 'string') {
+  if (status && typeof status === 'string' && VALID_STATUSES.includes(status)) {
     where.filmingStatus = status;
   }
 

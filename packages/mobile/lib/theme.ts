@@ -3,7 +3,7 @@ export const colors = {
   card: '#141417',
   cardAlt: '#1C1C24',
   border: '#2A2A35',
-  accent: '#00E5FF',   // cyan — primary CTA
+  accent: '#03EDD6',   // teal — primary CTA
   primary: '#7C3AED', // purple — series / badges
   success: '#22C55E', // green
   warning: '#F97316', // orange

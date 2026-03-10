@@ -16,6 +16,7 @@ import { GlowOrbs } from '@/components/GlowOrbs';
 export default function SeriesScreen() {
   const { getToken } = useAuth();
   const qc = useQueryClient();
+  const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -123,7 +124,7 @@ function SeriesCard({ series, onGenerate }: { series: ApiSeries; onGenerate: () 
       <View style={styles.cardInfo}>
         <Text style={styles.cardName}>{series.name}</Text>
         <Text style={styles.cardMeta}>
-          {series.episodeCount} episode{series.episodeCount !== 1 ? 's' : ''} · {series.status.replace('_', ' ')}
+          {series.episodeCount} episode{series.episodeCount !== 1 ? 's' : ''} · {series.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
         </Text>
       </View>
       <View style={styles.cardAction}>
