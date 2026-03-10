@@ -27,9 +27,7 @@
         "ascAppId": "6760321726",
         "appleTeamId": "7CY7Z4H53Z"
       },
-      "android": {
-        "serviceAccountKeyPath": ""
-      }
+      "android": {}
     }
   }
 }
