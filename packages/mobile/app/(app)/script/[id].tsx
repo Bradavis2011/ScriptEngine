@@ -9,8 +9,15 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
-import { getScript, updateScriptStatus, ApiScript } from '@/lib/api';
+import { getScript, updateScriptStatus } from '@/lib/api';
 import { colors, spacing, radius, scriptTypeColors, scriptTypeLabels } from '@/lib/theme';
+import { GlowOrbs } from '@/components/GlowOrbs';
+
+const STATUS_BADGE: Record<string, { label: string; color: string }> = {
+  ready:  { label: 'Ready to Film', color: colors.accent },
+  filmed: { label: 'Filmed',        color: colors.success },
+  posted: { label: 'Posted',        color: colors.primary },
+};
 
 export default function ScriptDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,7 +42,6 @@ export default function ScriptDetailScreen() {
       await updateScriptStatus(id!, 'posted', token!);
       qc.invalidateQueries({ queryKey: ['scripts'] });
       qc.invalidateQueries({ queryKey: ['script', id] });
-      router.back();
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
@@ -54,9 +60,12 @@ export default function ScriptDetailScreen() {
   const d = script.scriptData;
   const typeColor = scriptTypeColors[script.scriptType] ?? colors.neutral;
   const typeLabel = scriptTypeLabels[script.scriptType] ?? script.scriptType;
+  const statusBadge = STATUS_BADGE[script.filmingStatus] ?? STATUS_BADGE.ready;
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+      <GlowOrbs />
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -64,6 +73,9 @@ export default function ScriptDetailScreen() {
         </TouchableOpacity>
         <View style={[styles.typeBadge, { backgroundColor: typeColor + '22', borderColor: typeColor + '55' }]}>
           <Text style={[styles.typeText, { color: typeColor }]}>{typeLabel}</Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: statusBadge.color + '22' }]}>
+          <Text style={[styles.statusText, { color: statusBadge.color }]}>{statusBadge.label}</Text>
         </View>
         <Text style={styles.duration}>{d.totalDurationSeconds}s</Text>
       </View>
@@ -86,7 +98,7 @@ export default function ScriptDetailScreen() {
           <Text style={styles.scriptText}>"{d.callToAction}"</Text>
         </Section>
 
-        {/* Action buttons */}
+        {/* Caption + hashtags */}
         <View style={styles.actions}>
           <TouchableOpacity
             style={styles.actionBtn}
@@ -109,14 +121,13 @@ export default function ScriptDetailScreen() {
           onPress={() => Share.share({ message: `"${d.coldOpen}"\n\nMade with ClipScript — clipscriptai.com` })}
         >
           <Ionicons name="share-outline" size={16} color={colors.muted} />
-          <Text style={styles.shareBtnText}>Share Script Card</Text>
+          <Text style={styles.shareBtnText}>Share Script</Text>
         </TouchableOpacity>
 
-        {/* Bottom padding for sticky button */}
-        <View style={{ height: 100 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
 
-      {/* Sticky CTA */}
+      {/* Sticky CTAs */}
       {script.filmingStatus === 'ready' && (
         <View style={styles.sticky}>
           <TouchableOpacity style={styles.filmBtn} onPress={() => router.push(`/(app)/teleprompter/${id}`)}>
@@ -128,17 +139,38 @@ export default function ScriptDetailScreen() {
 
       {script.filmingStatus === 'filmed' && (
         <View style={styles.sticky}>
+          <View style={styles.stickyRow}>
+            <TouchableOpacity
+              style={styles.refilmBtn}
+              onPress={() => router.push(`/(app)/teleprompter/${id}`)}
+            >
+              <Ionicons name="reload" size={18} color={colors.white} />
+              <Text style={styles.refilmBtnText}>Re-film</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filmBtn, styles.postedBtn]}
+              onPress={markPosted}
+              disabled={markingPosted}
+            >
+              {markingPosted ? <ActivityIndicator color={colors.background} size="small" /> : (
+                <>
+                  <Ionicons name="checkmark-circle" size={20} color={colors.background} />
+                  <Text style={styles.filmBtnText}>Mark as Posted</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {script.filmingStatus === 'posted' && (
+        <View style={styles.sticky}>
           <TouchableOpacity
-            style={[styles.filmBtn, { backgroundColor: colors.success }]}
-            onPress={markPosted}
-            disabled={markingPosted}
+            style={[styles.filmBtn, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}
+            onPress={() => router.push(`/(app)/teleprompter/${id}`)}
           >
-            {markingPosted ? <ActivityIndicator color={colors.background} /> : (
-              <>
-                <Ionicons name="checkmark-circle" size={20} color={colors.background} />
-                <Text style={styles.filmBtnText}>Mark as Posted</Text>
-              </>
-            )}
+            <Ionicons name="reload" size={20} color={colors.white} />
+            <Text style={[styles.filmBtnText, { color: colors.white }]}>Re-film This Script</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -181,11 +213,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-    borderBottomWidth: 1, borderBottomColor: colors.border,
+    borderBottomWidth: 1, borderBottomColor: colors.border, flexWrap: 'wrap',
   },
   backBtn: { padding: 4 },
   typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.sm, borderWidth: 1 },
   typeText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.sm },
+  statusText: { fontSize: 11, fontWeight: '700' },
   duration: { marginLeft: 'auto', fontSize: 12, color: colors.muted },
   scroll: { flex: 1 },
   scrollContent: { padding: spacing.md, gap: spacing.sm },
@@ -204,12 +238,20 @@ const styles = StyleSheet.create({
   },
   shareBtnText: { fontSize: 13, fontWeight: '600', color: colors.muted },
   sticky: { padding: spacing.md, paddingBottom: spacing.lg },
+  stickyRow: { flexDirection: 'row', gap: spacing.sm },
   filmBtn: {
-    backgroundColor: colors.accent, borderRadius: radius.lg,
+    flex: 1, backgroundColor: colors.accent, borderRadius: radius.lg,
     paddingVertical: 18, flexDirection: 'row', alignItems: 'center',
     justifyContent: 'center', gap: 8,
   },
   filmBtnText: { fontSize: 16, fontWeight: '700', color: colors.background },
+  refilmBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    paddingVertical: 18, paddingHorizontal: spacing.lg,
+  },
+  refilmBtnText: { fontSize: 16, fontWeight: '600', color: colors.white },
+  postedBtn: { backgroundColor: colors.success },
 });
 
 const secStyles = StyleSheet.create({

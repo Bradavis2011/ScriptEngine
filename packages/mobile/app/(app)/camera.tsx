@@ -1,19 +1,20 @@
 import {
-  View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator,
+  View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@clerk/clerk-expo';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getAllScripts, ApiScript } from '@/lib/api';
+import { useState } from 'react';
+import { getAllScripts, updateScriptStatus, ApiScript } from '@/lib/api';
 import { colors, spacing, radius, scriptTypeColors, scriptTypeLabels } from '@/lib/theme';
 import { GlowOrbs } from '@/components/GlowOrbs';
 
-const STATUS_CONFIG: Record<string, { label: string; icon: string; ctaLabel: string; ctaColor: string }> = {
-  ready:   { label: 'Ready',  icon: 'ellipse',       ctaLabel: 'Film Now',  ctaColor: 'type' },
-  filmed:  { label: 'Filmed', icon: 'checkmark-circle', ctaLabel: 'Re-film', ctaColor: 'muted' },
-  posted:  { label: 'Posted', icon: 'share-social',  ctaLabel: 'Re-film',  ctaColor: 'muted' },
+const STATUS_CONFIG: Record<string, { label: string; icon: string }> = {
+  ready:  { label: 'Ready',  icon: 'ellipse' },
+  filmed: { label: 'Filmed', icon: 'checkmark-circle' },
+  posted: { label: 'Posted', icon: 'share-social' },
 };
 
 export default function CameraScreen() {
@@ -55,10 +56,7 @@ export default function CameraScreen() {
         <View style={styles.center}>
           <Ionicons name="wifi-outline" size={40} color={colors.muted} />
           <Text style={{ color: colors.muted, marginTop: 12, fontSize: 15 }}>Couldn't load scripts</Text>
-          <TouchableOpacity
-            style={[styles.refreshBtn, { width: 'auto', paddingHorizontal: 20, marginTop: 16 }]}
-            onPress={() => refetch()}
-          >
+          <TouchableOpacity style={[styles.refreshBtn, { width: 'auto', paddingHorizontal: 20, marginTop: 16 }]} onPress={() => refetch()}>
             <Text style={{ color: colors.white, fontSize: 14, fontWeight: '600' }}>Try Again</Text>
           </TouchableOpacity>
         </View>
@@ -77,12 +75,29 @@ export default function CameraScreen() {
 
 function ScriptCard({ script }: { script: ApiScript }) {
   const router = useRouter();
+  const { getToken } = useAuth();
+  const qc = useQueryClient();
+  const [markingPosted, setMarkingPosted] = useState(false);
+
   const typeColor = scriptTypeColors[script.scriptType] ?? colors.accent;
   const typeLabel = scriptTypeLabels[script.scriptType] ?? script.scriptType;
   const dur = script.scriptData.totalDurationSeconds;
   const status = STATUS_CONFIG[script.filmingStatus] ?? STATUS_CONFIG.ready;
-  const ctaColor = status.ctaColor === 'type' ? typeColor : colors.muted;
   const filmed = script.filmingStatus !== 'ready';
+
+  const markPosted = async (e: any) => {
+    e.stopPropagation();
+    setMarkingPosted(true);
+    try {
+      const token = await getToken();
+      await updateScriptStatus(script.id, 'posted', token!);
+      qc.invalidateQueries({ queryKey: ['scripts'] });
+    } catch (err: any) {
+      Alert.alert('Error', err.message ?? 'Could not mark as posted');
+    } finally {
+      setMarkingPosted(false);
+    }
+  };
 
   return (
     <TouchableOpacity
@@ -102,9 +117,13 @@ function ScriptCard({ script }: { script: ApiScript }) {
             <Ionicons
               name={status.icon as any}
               size={10}
-              color={filmed ? colors.success : colors.muted}
+              color={script.filmingStatus === 'posted' ? colors.primary : filmed ? colors.success : colors.muted}
             />
-            <Text style={[styles.statusText, filmed && styles.statusTextFilmed]}>
+            <Text style={[
+              styles.statusText,
+              script.filmingStatus === 'filmed' && styles.statusFilmed,
+              script.filmingStatus === 'posted' && styles.statusPosted,
+            ]}>
               {status.label}
             </Text>
           </View>
@@ -119,18 +138,41 @@ function ScriptCard({ script }: { script: ApiScript }) {
           "{script.scriptData.coldOpen}"
         </Text>
 
-        {/* CTA */}
+        {/* Footer actions */}
         <View style={styles.cardFooter}>
-          <View style={[styles.filmBtn, { backgroundColor: ctaColor + (filmed ? '22' : 'FF') }]}>
+          {/* Re-film / Film Now — always present */}
+          <View style={[
+            styles.filmBtn,
+            { backgroundColor: filmed ? colors.muted + '22' : typeColor },
+          ]}>
             <Ionicons
               name={filmed ? 'reload' : 'videocam'}
               size={13}
-              color={filmed ? ctaColor : '#0B0B0D'}
+              color={filmed ? colors.muted : '#0B0B0D'}
             />
-            <Text style={[styles.filmBtnText, { color: filmed ? ctaColor : '#0B0B0D' }]}>
-              {status.ctaLabel}
+            <Text style={[styles.filmBtnText, { color: filmed ? colors.muted : '#0B0B0D' }]}>
+              {filmed ? 'Re-film' : 'Film Now'}
             </Text>
           </View>
+
+          {/* Mark as Posted — only for filmed (not yet posted) */}
+          {script.filmingStatus === 'filmed' && (
+            <TouchableOpacity
+              style={styles.postedBtn}
+              onPress={markPosted}
+              disabled={markingPosted}
+              activeOpacity={0.75}
+            >
+              {markingPosted ? (
+                <ActivityIndicator size="small" color={colors.success} />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle-outline" size={13} color={colors.success} />
+                  <Text style={styles.postedBtnText}>Mark Posted</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -174,33 +216,35 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg, overflow: 'hidden',
     borderWidth: 1, borderColor: colors.border,
   },
-  cardFilmed: { borderColor: colors.border, opacity: 0.85 },
+  cardFilmed: { opacity: 0.85 },
   accentBar: { width: 4 },
   cardBody: { flex: 1, padding: spacing.md },
 
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' },
-  typeBadge: {
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.sm, borderWidth: 1,
-  },
+  typeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.sm, borderWidth: 1 },
   typeBadgeText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statusText: { fontSize: 11, color: colors.muted, fontWeight: '600' },
-  statusTextFilmed: { color: colors.success },
+  statusFilmed: { color: colors.success },
+  statusPosted: { color: colors.primary },
   durBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: 'auto' },
   durText: { fontSize: 11, color: colors.muted, fontWeight: '500' },
 
-  hook: {
-    fontSize: 15, color: colors.white, fontWeight: '500', lineHeight: 22,
-    marginBottom: 12, fontStyle: 'italic',
-  },
+  hook: { fontSize: 15, color: colors.white, fontWeight: '500', lineHeight: 22, marginBottom: 12, fontStyle: 'italic' },
   hookFilmed: { color: colors.neutral },
 
-  cardFooter: { flexDirection: 'row', alignItems: 'center' },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   filmBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.md,
   },
   filmBtnText: { fontSize: 13, fontWeight: '700' },
+  postedBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.md,
+    backgroundColor: colors.success + '18', borderWidth: 1, borderColor: colors.success + '44',
+  },
+  postedBtnText: { fontSize: 13, fontWeight: '700', color: colors.success },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 80, gap: spacing.sm },
