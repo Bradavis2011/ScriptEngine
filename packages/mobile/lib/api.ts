@@ -87,6 +87,9 @@ export const getMe = (token: string) => request('/api/tenants/me', { token });
 export const getScripts = (status: string, token: string) =>
   request<ApiScript[]>(`/api/scripts?status=${encodeURIComponent(status)}`, { token });
 
+export const getAllScripts = (token: string) =>
+  request<ApiScript[]>('/api/scripts', { token });
+
 export const getTodayScripts = (token: string) =>
   request<ApiScript[]>('/api/scripts/today', { token });
 

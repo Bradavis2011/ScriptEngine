@@ -1,29 +1,27 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Image,
+  View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Image, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { getScripts } from '@/lib/api';
+import { getAllScripts } from '@/lib/api';
 import { colors, spacing, radius } from '@/lib/theme';
+import { GlowOrbs } from '@/components/GlowOrbs';
 
 export default function ProfileScreen() {
   const { getToken, signOut } = useAuth();
   const { user } = useUser();
 
-  const { data: filmed = [] } = useQuery({
-    queryKey: ['scripts', 'filmed'],
-    queryFn: async () => { const t = await getToken(); return getScripts('filmed', t!); },
+  // Single fetch — derive all counts client-side
+  const { data: scripts = [] } = useQuery({
+    queryKey: ['scripts', 'all'],
+    queryFn: async () => { const t = await getToken(); return getAllScripts(t!); },
   });
-  const { data: posted = [] } = useQuery({
-    queryKey: ['scripts', 'posted'],
-    queryFn: async () => { const t = await getToken(); return getScripts('posted', t!); },
-  });
-  const { data: ready = [] } = useQuery({
-    queryKey: ['scripts', 'ready'],
-    queryFn: async () => { const t = await getToken(); return getScripts('ready', t!); },
-  });
+
+  const ready  = scripts.filter(s => s.filmingStatus === 'ready').length;
+  const filmed = scripts.filter(s => s.filmingStatus === 'filmed').length;
+  const posted = scripts.filter(s => s.filmingStatus === 'posted').length;
 
   const handleSignOut = () => {
     Alert.alert('Sign out', 'Are you sure?', [
@@ -35,14 +33,15 @@ export default function ProfileScreen() {
   const displayName = user?.fullName ?? user?.username ?? 'Creator';
 
   const stats = [
-    { label: 'Ready', value: ready.length, icon: 'document-text-outline' as const },
-    { label: 'Filmed', value: filmed.length, icon: 'videocam-outline' as const },
-    { label: 'Posted', value: posted.length, icon: 'send-outline' as const },
-    { label: 'Total', value: ready.length + filmed.length + posted.length, icon: 'bar-chart-outline' as const },
+    { label: 'Ready',  value: ready,                    icon: 'document-text-outline' as const },
+    { label: 'Filmed', value: filmed,                   icon: 'videocam-outline' as const },
+    { label: 'Posted', value: posted,                   icon: 'send-outline' as const },
+    { label: 'Total',  value: ready + filmed + posted,  icon: 'bar-chart-outline' as const },
   ];
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
+      <GlowOrbs />
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Avatar + name */}
         <View style={styles.profile}>
@@ -75,7 +74,7 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
           <MenuItem icon="mail-outline" label="Contact Support" onPress={() => Alert.alert('Support', 'Email hello@clipscriptai.com')} />
-          <MenuItem icon="lock-closed-outline" label="Privacy Policy" onPress={() => {}} />
+          <MenuItem icon="lock-closed-outline" label="Privacy Policy" onPress={() => Linking.openURL('https://clipscriptai.com/privacy')} />
           <MenuItem icon="log-out-outline" label="Sign Out" onPress={handleSignOut} destructive />
         </View>
       </ScrollView>

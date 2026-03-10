@@ -1,13 +1,16 @@
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import * as SecureStore from 'expo-secure-store';
+import * as SplashScreen from 'expo-splash-screen';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-const PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+SplashScreen.preventAutoHideAsync();
+
+const PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 const tokenCache = {
   async getToken(key: string) {
@@ -31,8 +34,9 @@ function AuthGate() {
   useEffect(() => {
     if (!isLoaded) return;
 
+    SplashScreen.hideAsync();
+
     const inAuth = segments[0] === '(auth)';
-    const inOnboarding = segments[0] === 'onboarding';
 
     if (!isSignedIn && !inAuth) {
       router.replace('/(auth)/sign-in');
@@ -44,7 +48,24 @@ function AuthGate() {
   return <Slot />;
 }
 
+function MissingKeyError() {
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
+  return (
+    <View style={styles.errorContainer}>
+      <Text style={styles.errorText}>
+        Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in .env
+      </Text>
+    </View>
+  );
+}
+
 export default function RootLayout() {
+  if (!PUBLISHABLE_KEY) {
+    return <MissingKeyError />;
+  }
+
   return (
     <ClerkProvider publishableKey={PUBLISHABLE_KEY} tokenCache={tokenCache}>
       <QueryClientProvider client={queryClient}>
@@ -59,4 +80,16 @@ export default function RootLayout() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  errorContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  errorText: {
+    color: '#ff4444',
+    fontSize: 16,
+    textAlign: 'center',
+  },
 });

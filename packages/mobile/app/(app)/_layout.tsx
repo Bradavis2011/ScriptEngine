@@ -6,14 +6,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/lib/theme';
 
+const TEAL = '#03EDD6';
+const RED  = '#FD1741';
+
 function TabIcon({ name, color, focused }: { name: any; color: string; focused: boolean }) {
   return <Ionicons name={name} size={focused ? 24 : 22} color={color} />;
 }
 
-function CameraTabIcon({ color, focused }: { color: string; focused: boolean }) {
+function CameraTabIcon({ focused }: { color: string; focused: boolean }) {
   return (
     <View style={[styles.cameraBtn, focused && styles.cameraBtnFocused]}>
-      <Ionicons name="camera" size={24} color={focused ? colors.background : colors.white} />
+      <Ionicons name="camera" size={24} color={focused ? '#0B0B0D' : colors.white} />
     </View>
   );
 }
@@ -111,7 +114,9 @@ const styles = StyleSheet.create({
     marginTop: -8,
   },
   cameraBtnFocused: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: TEAL,
+    borderColor: TEAL,
+    shadowColor: TEAL, shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6, shadowRadius: 12, elevation: 8,
   },
 });

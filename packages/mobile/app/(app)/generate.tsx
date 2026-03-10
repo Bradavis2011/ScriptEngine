@@ -3,8 +3,8 @@ import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,9 +27,14 @@ export default function GenerateScreen() {
   const router = useRouter();
   const { getToken } = useAuth();
   const qc = useQueryClient();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = (Platform.OS === 'ios' ? 60 : 56) + insets.bottom;
+  const params = useLocalSearchParams<{ seriesId?: string; scriptType?: string }>();
 
-  const [scriptType, setScriptType] = useState<ScriptTypeValue>('niche_tip');
-  const [seriesId, setSeriesId] = useState('');
+  const [scriptType, setScriptType] = useState<ScriptTypeValue>(
+    (params.scriptType as ScriptTypeValue) ?? 'niche_tip'
+  );
+  const [seriesId, setSeriesId] = useState(params.seriesId ?? '');
   const [context, setContext] = useState('');
   const [loading, setLoading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -90,7 +95,7 @@ export default function GenerateScreen() {
           <View style={{ width: 36 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: tabBarHeight + 24 }]} keyboardShouldPersistTaps="handled">
           <Text style={styles.sectionLabel}>Script type</Text>
           <View style={styles.typeGrid}>
             {SCRIPT_TYPES.map((t) => (
@@ -177,7 +182,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center',
   },
   title: { fontSize: 17, fontWeight: '700' },
-  scroll: { padding: spacing.md, paddingBottom: 40, gap: spacing.sm },
+  scroll: { padding: spacing.md, gap: spacing.sm },
   sectionLabel: { fontSize: 12, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: spacing.md, marginBottom: spacing.sm },
   optional: { fontWeight: '400', textTransform: 'none' },
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

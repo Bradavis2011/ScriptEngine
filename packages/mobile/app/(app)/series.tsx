@@ -8,8 +8,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@clerk/clerk-expo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { getSeries, createSeries, ApiSeries } from '@/lib/api';
 import { colors, spacing, radius } from '@/lib/theme';
+import { GlowOrbs } from '@/components/GlowOrbs';
 
 export default function SeriesScreen() {
   const { getToken } = useAuth();
@@ -44,6 +46,7 @@ export default function SeriesScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
+      <GlowOrbs />
       <View style={styles.header}>
         <Text style={styles.title}>Series</Text>
         <TouchableOpacity style={styles.addBtn} onPress={() => { setName(''); setModalVisible(true); }}>
@@ -70,7 +73,7 @@ export default function SeriesScreen() {
               </TouchableOpacity>
             </View>
           }
-          renderItem={({ item }) => <SeriesCard series={item} />}
+          renderItem={({ item }) => <SeriesCard series={item} onGenerate={() => router.push(`/(app)/generate?seriesId=${item.id}&scriptType=series_episode`)} />}
         />
       )}
 
@@ -111,9 +114,9 @@ export default function SeriesScreen() {
   );
 }
 
-function SeriesCard({ series }: { series: ApiSeries }) {
+function SeriesCard({ series, onGenerate }: { series: ApiSeries; onGenerate: () => void }) {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onGenerate} activeOpacity={0.8}>
       <View style={styles.cardIcon}>
         <Ionicons name="layers" size={20} color={colors.primary} />
       </View>
@@ -123,8 +126,11 @@ function SeriesCard({ series }: { series: ApiSeries }) {
           {series.episodeCount} episode{series.episodeCount !== 1 ? 's' : ''} · {series.status.replace('_', ' ')}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={16} color={colors.muted} />
-    </View>
+      <View style={styles.cardAction}>
+        <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
+        <Text style={styles.cardActionText}>New Ep</Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -154,6 +160,8 @@ const styles = StyleSheet.create({
   cardInfo: { flex: 1 },
   cardName: { fontSize: 15, fontWeight: '600', color: colors.white },
   cardMeta: { fontSize: 12, color: colors.muted, marginTop: 2, textTransform: 'capitalize' },
+  cardAction: { alignItems: 'center', gap: 2 },
+  cardActionText: { fontSize: 10, fontWeight: '700', color: colors.primary, letterSpacing: 0.4 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 80, gap: spacing.sm },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.white },

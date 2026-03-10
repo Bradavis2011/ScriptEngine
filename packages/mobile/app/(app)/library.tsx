@@ -8,8 +8,11 @@ import { useAuth } from '@clerk/clerk-expo';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getScripts, ApiScript } from '@/lib/api';
+import { getAllScripts, ApiScript } from '@/lib/api';
 import { colors, spacing, radius, scriptTypeColors, scriptTypeLabels } from '@/lib/theme';
+import { GlowOrbs } from '@/components/GlowOrbs';
+
+const TEAL = '#03EDD6';
 
 const TABS = [
   { label: 'Ready', status: 'ready' },
@@ -24,25 +27,37 @@ export default function LibraryScreen() {
   const { getToken } = useAuth();
   const router = useRouter();
 
-  const { data: scripts = [], isLoading, refetch } = useQuery({
-    queryKey: ['scripts', activeTab],
+  // Single fetch for all scripts — tabs filter client-side, no re-fetch on tab switch
+  const { data: scripts = [], isLoading, isError, isFetching, refetch } = useQuery({
+    queryKey: ['scripts', 'all'],
     queryFn: async () => {
       const token = await getToken();
-      return getScripts(activeTab, token!);
+      return getAllScripts(token!);
     },
   });
 
+  const filtered = scripts.filter(s => s.filmingStatus === activeTab);
+  const counts: Record<Status, number> = {
+    ready:  scripts.filter(s => s.filmingStatus === 'ready').length,
+    filmed: scripts.filter(s => s.filmingStatus === 'filmed').length,
+    posted: scripts.filter(s => s.filmingStatus === 'posted').length,
+  };
+
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
+      <GlowOrbs />
+
       <View style={styles.header}>
-        <Text style={styles.title}>Script Library</Text>
+        <Text style={styles.title}>
+          <Text style={{ color: colors.white }}>Script </Text>
+          <Text style={{ color: TEAL }}>Library</Text>
+        </Text>
         <TouchableOpacity style={styles.genBtn} onPress={() => router.push('/(app)/generate')}>
-          <Ionicons name="add" size={20} color={colors.background} />
+          <Ionicons name="add" size={20} color="#0B0B0D" />
           <Text style={styles.genBtnText}>Generate</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Tabs */}
       <View style={styles.tabs}>
         {TABS.map((t) => (
           <TouchableOpacity
@@ -52,19 +67,28 @@ export default function LibraryScreen() {
           >
             <Text style={[styles.tabText, activeTab === t.status && styles.tabTextActive]}>
               {t.label}
+              {counts[t.status] > 0 ? ` (${counts[t.status]})` : ''}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
       {isLoading ? (
-        <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
+        <View style={styles.center}><ActivityIndicator color={TEAL} /></View>
+      ) : isError ? (
+        <View style={styles.center}>
+          <Ionicons name="wifi-outline" size={40} color={colors.muted} />
+          <Text style={styles.errorText}>Couldn't load scripts</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
+            <Text style={styles.retryBtnText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <FlatList
-          data={scripts}
+          data={filtered}
           keyExtractor={(s) => s.id}
           contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.accent} />}
+          refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={TEAL} />}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyText}>No {activeTab} scripts yet</Text>
@@ -96,14 +120,16 @@ function ScriptRow({ script, onPress }: { script: ApiScript; onPress: () => void
         </View>
         <View style={styles.cardRight}>
           <Text style={styles.duration}>{script.scriptData.totalDurationSeconds}s</Text>
-          {script.filmingStatus === 'ready' && (
-            <TouchableOpacity
-              style={styles.filmIconBtn}
-              onPress={(e) => { e.stopPropagation(); router.push(`/(app)/teleprompter/${script.id}`); }}
-            >
-              <Ionicons name="videocam" size={16} color={colors.accent} />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={styles.filmIconBtn}
+            onPress={(e) => { e.stopPropagation(); router.push(`/(app)/teleprompter/${script.id}`); }}
+          >
+            <Ionicons
+              name={script.filmingStatus === 'ready' ? 'videocam' : 'reload'}
+              size={15}
+              color={TEAL}
+            />
+          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
@@ -116,21 +142,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.md, paddingVertical: spacing.md,
   },
-  title: { fontSize: 24, fontWeight: '800', color: colors.white },
+  title: { fontSize: 24, fontWeight: '800' },
   genBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: colors.accent, borderRadius: radius.md,
+    backgroundColor: TEAL, borderRadius: radius.md,
     paddingHorizontal: 12, paddingVertical: 8,
+    shadowColor: TEAL, shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5, shadowRadius: 10, elevation: 6,
   },
-  genBtnText: { fontSize: 14, fontWeight: '700', color: colors.background },
+  genBtnText: { fontSize: 14, fontWeight: '700', color: '#0B0B0D' },
   tabs: {
     flexDirection: 'row', marginHorizontal: spacing.md,
     backgroundColor: colors.card, borderRadius: radius.md, padding: 4, marginBottom: spacing.md,
   },
   tab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: radius.sm },
-  tabActive: { backgroundColor: colors.accent },
-  tabText: { fontSize: 14, fontWeight: '600', color: colors.muted },
-  tabTextActive: { color: colors.background },
+  tabActive: {
+    backgroundColor: TEAL,
+    shadowColor: TEAL, shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4, shadowRadius: 6, elevation: 4,
+  },
+  tabText: { fontSize: 13, fontWeight: '600', color: colors.muted },
+  tabTextActive: { color: '#0B0B0D', fontWeight: '700' },
   list: { padding: spacing.md, paddingBottom: 100, gap: spacing.sm },
   card: {
     backgroundColor: colors.card, borderRadius: radius.lg,
@@ -144,9 +176,13 @@ const styles = StyleSheet.create({
   duration: { fontSize: 12, color: colors.muted },
   filmIconBtn: {
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: colors.accent + '22', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: TEAL + '22', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: TEAL + '44',
   },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
+  errorText: { fontSize: 15, color: colors.muted },
+  retryBtn: { backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.lg, paddingVertical: 10 },
+  retryBtnText: { fontSize: 14, fontWeight: '600', color: colors.white },
   empty: { alignItems: 'center', paddingTop: 80 },
   emptyText: { fontSize: 15, color: colors.muted },
 });

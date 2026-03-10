@@ -3,13 +3,17 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
   Alert, SafeAreaView,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { createTenant } from '@/lib/api';
 import { colors, spacing, radius } from '@/lib/theme';
+import { GlowOrbs } from '@/components/GlowOrbs';
+
+const TEAL = '#03EDD6';
+const RED  = '#FD1741';
 
 const NICHES = ['Fashion', 'Fitness', 'Food', 'Tech', 'Finance', 'Business'];
-const FREQUENCIES = ['1', '3', '5', '10'];
 
 export default function Onboarding() {
   const router = useRouter();
@@ -36,16 +40,24 @@ export default function Onboarding() {
 
   return (
     <SafeAreaView style={styles.root}>
-      {/* Progress dots */}
-      <View style={styles.progress}>
-        {[0, 1].map((i) => (
-          <View key={i} style={[styles.dot, i <= step && styles.dotActive]} />
-        ))}
+      <GlowOrbs />
+
+      {/* Gradient progress bar */}
+      <View style={styles.progressTrack}>
+        <LinearGradient
+          colors={[TEAL, RED]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.progressFill, { width: step === 0 ? '50%' : '100%' }]}
+        />
       </View>
 
       {step === 0 && (
         <View style={styles.step}>
-          <Text style={styles.title}>What do you create?</Text>
+          <Text style={styles.title}>
+            <Text style={{ color: colors.white }}>What do you </Text>
+            <Text style={{ color: TEAL }}>create?</Text>
+          </Text>
           <Text style={styles.sub}>Pick your niche to personalize your scripts</Text>
           <View style={styles.grid}>
             {NICHES.map((n) => (
@@ -63,11 +75,14 @@ export default function Onboarding() {
 
       {step === 1 && (
         <View style={styles.step}>
-          <Text style={styles.title}>You're all set.</Text>
+          <Text style={styles.title}>
+            <Text style={{ color: colors.white }}>You're all </Text>
+            <Text style={{ color: TEAL }}>set.</Text>
+          </Text>
           <Text style={styles.sub}>
             Your first scripts will generate shortly. Film them anytime from the Scripts tab.
           </Text>
-          <View style={[styles.confirmBox]}>
+          <View style={styles.confirmBox}>
             <Text style={styles.confirmLabel}>Niche</Text>
             <Text style={styles.confirmValue}>{niche}</Text>
           </View>
@@ -80,7 +95,7 @@ export default function Onboarding() {
         disabled={loading || (step === 0 && !niche)}
       >
         {loading ? (
-          <ActivityIndicator color={colors.background} />
+          <ActivityIndicator color="#0B0B0D" />
         ) : (
           <Text style={styles.btnText}>{step === 1 ? 'Go to Library' : 'Continue'}</Text>
         )}
@@ -91,11 +106,13 @@ export default function Onboarding() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
-  progress: { flexDirection: 'row', gap: 8, marginBottom: spacing.xl },
-  dot: { flex: 1, height: 4, borderRadius: 2, backgroundColor: colors.border },
-  dotActive: { backgroundColor: colors.accent },
+  progressTrack: {
+    height: 4, borderRadius: 2, backgroundColor: colors.border,
+    marginBottom: spacing.xl, overflow: 'hidden',
+  },
+  progressFill: { height: 4, borderRadius: 2 },
   step: { flex: 1, justifyContent: 'center' },
-  title: { fontSize: 30, fontWeight: '800', color: colors.white, marginBottom: spacing.sm },
+  title: { fontSize: 30, fontWeight: '800', marginBottom: spacing.sm },
   sub: { fontSize: 15, color: colors.neutral, marginBottom: spacing.xl, lineHeight: 22 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
@@ -103,19 +120,25 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
     backgroundColor: colors.card,
   },
-  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chipActive: {
+    backgroundColor: TEAL + '18', borderColor: TEAL,
+    shadowColor: TEAL, shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3, shadowRadius: 6, elevation: 3,
+  },
   chipText: { fontSize: 15, fontWeight: '600', color: colors.neutral },
-  chipTextActive: { color: colors.background },
+  chipTextActive: { color: TEAL, fontWeight: '700' },
   confirmBox: {
     backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md,
-    borderWidth: 1, borderColor: colors.border,
+    borderWidth: 1, borderColor: TEAL + '44',
   },
   confirmLabel: { fontSize: 11, fontWeight: '600', color: colors.neutral, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 },
   confirmValue: { fontSize: 18, fontWeight: '700', color: colors.white },
   btn: {
-    backgroundColor: colors.accent, borderRadius: radius.lg,
+    backgroundColor: TEAL, borderRadius: radius.lg,
     paddingVertical: 18, alignItems: 'center', marginTop: spacing.md,
+    shadowColor: TEAL, shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 8,
   },
   btnDisabled: { opacity: 0.4 },
-  btnText: { fontSize: 16, fontWeight: '700', color: colors.background },
+  btnText: { fontSize: 16, fontWeight: '700', color: '#0B0B0D' },
 });

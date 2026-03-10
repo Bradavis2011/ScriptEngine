@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSignIn, useSignUp } from '@clerk/clerk-expo';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { colors, spacing, radius } from '@/lib/theme';
+import { GlowOrbs } from '@/components/GlowOrbs';
 
 const TEAL = '#03EDD6';
 const RED  = '#FD1741';
@@ -114,9 +115,7 @@ export default function SignIn() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      {/* Teal orb top-left, red orb top-right — matches landing page */}
-      <View style={styles.orbTeal} />
-      <View style={styles.orbRed} />
+      <GlowOrbs />
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" bounces={false}>
         {/* Logo row — icon.png + logo.png, same as landing page nav */}
@@ -258,16 +257,6 @@ export default function SignIn() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  orbTeal: {
-    position: 'absolute', top: -120, left: -120,
-    width: 380, height: 380, borderRadius: 190,
-    backgroundColor: TEAL, opacity: 0.14,
-  },
-  orbRed: {
-    position: 'absolute', top: -80, right: -80,
-    width: 340, height: 340, borderRadius: 170,
-    backgroundColor: RED, opacity: 0.12,
-  },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg, alignItems: 'center' },
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: spacing.xl },
   icon: { width: 36, height: 36, borderRadius: radius.md },
