@@ -159,6 +159,20 @@ Be SPECIFIC. Use the YouTube data. Write hooks that would actually make someone 
   return result.response.text();
 }
 
+const SCRIPT_TIMEOUT_MS = 55_000; // 55 s — stay inside Railway's 60 s request window
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`${label} timed out after ${ms / 1000}s`)),
+        ms
+      )
+    ),
+  ]);
+}
+
 export async function generateScript(input: GenerateScriptInput): Promise<ScriptData> {
   const model = getGenAI().getGenerativeModel({
     model: 'gemini-2.5-flash',
@@ -195,7 +209,11 @@ Requirements:
 Write in a natural, conversational tone. Avoid corporate-speak.
 `.trim();
 
-  const result = await model.generateContent(prompt);
+  const result = await withTimeout(
+    model.generateContent(prompt),
+    SCRIPT_TIMEOUT_MS,
+    'Gemini generateScript'
+  );
   const text = result.response.text();
   return JSON.parse(text) as ScriptData;
 }

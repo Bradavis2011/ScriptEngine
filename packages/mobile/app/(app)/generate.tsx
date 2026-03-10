@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
@@ -10,6 +10,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { generateScript, getSeries, ApiSeries } from '@/lib/api';
 import { colors, spacing, radius } from '@/lib/theme';
+import { GlowOrbs } from '@/components/GlowOrbs';
+
+const TEAL = '#03EDD6';
 
 const SCRIPT_TYPES = [
   { value: 'niche_tip', label: 'Niche Tip', desc: '3 actionable tips' },
@@ -29,6 +32,18 @@ export default function GenerateScreen() {
   const [seriesId, setSeriesId] = useState('');
   const [context, setContext] = useState('');
   const [loading, setLoading] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (loading) {
+      setElapsed(0);
+      timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [loading]);
 
   const { data: series = [] } = useQuery({
     queryKey: ['series'],
@@ -61,18 +76,21 @@ export default function GenerateScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+      <GlowOrbs />
+
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
             <Ionicons name="close" size={22} color={colors.white} />
           </TouchableOpacity>
-          <Text style={styles.title}>Generate Script</Text>
+          <Text style={styles.title}>
+            <Text style={{ color: colors.white }}>Generate </Text>
+            <Text style={{ color: TEAL }}>Script</Text>
+          </Text>
           <View style={{ width: 36 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          {/* Script type grid */}
           <Text style={styles.sectionLabel}>Script type</Text>
           <View style={styles.typeGrid}>
             {SCRIPT_TYPES.map((t) => (
@@ -89,7 +107,6 @@ export default function GenerateScreen() {
             ))}
           </View>
 
-          {/* Series picker */}
           {scriptType === 'series_episode' && series.length > 0 && (
             <>
               <Text style={styles.sectionLabel}>Series</Text>
@@ -116,7 +133,6 @@ export default function GenerateScreen() {
             </View>
           )}
 
-          {/* Additional context */}
           <Text style={styles.sectionLabel}>Additional context <Text style={styles.optional}>(optional)</Text></Text>
           <TextInput
             style={styles.contextInput}
@@ -136,8 +152,8 @@ export default function GenerateScreen() {
           >
             {loading ? (
               <>
-                <ActivityIndicator color={colors.background} size="small" />
-                <Text style={styles.genBtnText}>Generating… (10–20s)</Text>
+                <ActivityIndicator color="#0B0B0D" size="small" />
+                <Text style={styles.genBtnText}>Generating… {elapsed}s</Text>
               </>
             ) : (
               <Text style={styles.genBtnText}>Generate Script</Text>
@@ -160,7 +176,7 @@ const styles = StyleSheet.create({
     width: 36, height: 36, borderRadius: 18,
     backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center',
   },
-  title: { fontSize: 17, fontWeight: '700', color: colors.white },
+  title: { fontSize: 17, fontWeight: '700' },
   scroll: { padding: spacing.md, paddingBottom: 40, gap: spacing.sm },
   sectionLabel: { fontSize: 12, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: spacing.md, marginBottom: spacing.sm },
   optional: { fontWeight: '400', textTransform: 'none' },
@@ -169,9 +185,13 @@ const styles = StyleSheet.create({
     width: '48%', backgroundColor: colors.card, borderRadius: radius.md,
     padding: spacing.md, borderWidth: 1, borderColor: colors.border,
   },
-  typeCardActive: { borderColor: colors.accent, backgroundColor: colors.accent + '15' },
+  typeCardActive: {
+    borderColor: TEAL, backgroundColor: TEAL + '15',
+    shadowColor: TEAL, shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3, shadowRadius: 6, elevation: 3,
+  },
   typeCardLabel: { fontSize: 14, fontWeight: '700', color: colors.white, marginBottom: 2 },
-  typeCardLabelActive: { color: colors.accent },
+  typeCardLabelActive: { color: TEAL },
   typeCardDesc: { fontSize: 12, color: colors.muted },
   seriesList: { gap: spacing.sm },
   seriesOption: {
@@ -179,9 +199,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1,
     borderColor: colors.border, padding: spacing.md,
   },
-  seriesOptionActive: { borderColor: colors.accent },
+  seriesOptionActive: { borderColor: TEAL },
   seriesOptionText: { fontSize: 14, fontWeight: '600', color: colors.white },
-  seriesOptionTextActive: { color: colors.accent },
+  seriesOptionTextActive: { color: TEAL },
   seriesEpCount: { fontSize: 12, color: colors.muted },
   noSeriesBox: { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border },
   noSeriesText: { fontSize: 13, color: colors.muted },
@@ -191,10 +211,12 @@ const styles = StyleSheet.create({
     color: colors.white, minHeight: 80,
   },
   genBtn: {
-    backgroundColor: colors.accent, borderRadius: radius.lg,
+    backgroundColor: TEAL, borderRadius: radius.lg,
     paddingVertical: 18, flexDirection: 'row', alignItems: 'center',
     justifyContent: 'center', gap: 8, marginTop: spacing.md,
+    shadowColor: TEAL, shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 8,
   },
   genBtnDisabled: { opacity: 0.6 },
-  genBtnText: { fontSize: 16, fontWeight: '700', color: colors.background },
+  genBtnText: { fontSize: 16, fontWeight: '700', color: '#0B0B0D' },
 });
