@@ -161,18 +161,15 @@ export default function TeleprompterScreen() {
     let savedToLibrary = false;
     if (pendingUri) {
       try {
-        const perm = await MediaLibrary.requestPermissionsAsync(false, ['photo', 'video']);
+        const perm = await MediaLibrary.requestPermissionsAsync();
         if (perm.granted) {
           await MediaLibrary.saveToLibraryAsync(pendingUri);
           savedToLibrary = true;
-        } else {
-          Alert.alert(
-            'Gallery permission denied',
-            'The video was NOT saved to your camera roll. Grant photo/video access in Settings to save videos.',
-          );
         }
-      } catch (e: any) {
-        Alert.alert('Save failed', `Could not save to camera roll: ${e?.message ?? 'unknown error'}`);
+        // If permission denied or unsupported in this build, silently continue —
+        // success screen shows "Take Complete" instead of "Saved to Camera Roll"
+      } catch {
+        // Expo Go restricts video saves — silently continue, still mark as filmed
       }
     }
     try {
