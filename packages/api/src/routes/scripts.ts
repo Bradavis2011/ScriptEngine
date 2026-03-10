@@ -2,6 +2,8 @@ import { Router, Response } from 'express';
 import { AuthedRequest, requireAuth } from '../middleware/requireAuth';
 import { prisma } from '../lib/prisma';
 import { generateScript, GenerateScriptInput } from '../lib/gemini';
+import { getActivePrompt } from '../lib/promptVersions';
+import { computeEngagementScore, checkExperimentCompletion } from '../lib/calibration';
 
 const router = Router();
 
@@ -65,6 +67,9 @@ router.post('/generate', requireAuth, async (req, res: Response) => {
     }
   }
 
+  // Resolve prompt version (A/B: 80% current, 20% challenger)
+  const { prompt: typePrompt, promptVersionId } = await getActivePrompt(resolvedType);
+
   const input: GenerateScriptInput = {
     niche: tenant.niche,
     scriptType: resolvedType,
@@ -75,7 +80,7 @@ router.post('/generate', requireAuth, async (req, res: Response) => {
 
   let scriptData;
   try {
-    scriptData = await generateScript(input);
+    scriptData = await generateScript(input, typePrompt);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[scripts/generate] Gemini error:', message);
@@ -89,6 +94,7 @@ router.post('/generate', requireAuth, async (req, res: Response) => {
       scriptType: resolvedType,
       scriptData: scriptData as any,
       seriesId: seriesId ?? null,
+      promptVersionId,
     },
   });
 
@@ -177,6 +183,68 @@ router.patch('/:id/status', requireAuth, async (req, res: Response) => {
     where: { id },
     data: { filmingStatus },
   });
+
+  res.json(updated);
+});
+
+// POST /api/scripts/:id/performance — log performance data for a posted script
+router.post('/:id/performance', requireAuth, async (req, res: Response) => {
+  const { clerkUserId } = req as AuthedRequest;
+  const { views, likes, shares, follows } = req.body as {
+    views?: number;
+    likes?: number;
+    shares?: number;
+    follows?: number;
+  };
+
+  if (views == null || views < 0) {
+    res.status(400).json({ error: 'views is required and must be >= 0' });
+    return;
+  }
+
+  const tenant = await prisma.tenant.findUnique({ where: { clerkUserId } });
+  if (!tenant) {
+    res.status(404).json({ error: 'Tenant not found' });
+    return;
+  }
+
+  const id = String(req.params.id);
+  const script = await prisma.script.findFirst({
+    where: { id, tenantId: tenant.id },
+  });
+  if (!script) {
+    res.status(404).json({ error: 'Script not found' });
+    return;
+  }
+
+  const performance = {
+    views: views ?? 0,
+    likes: likes ?? 0,
+    shares: shares ?? 0,
+    follows: follows ?? 0,
+    engagementScore: computeEngagementScore({
+      views: views ?? 0,
+      likes: likes ?? 0,
+      shares: shares ?? 0,
+      follows: follows ?? 0,
+    }),
+    loggedAt: new Date().toISOString(),
+  };
+
+  const updated = await prisma.script.update({
+    where: { id },
+    data: {
+      performance: performance as any,
+      filmingStatus: 'posted', // auto-mark as posted when logging performance
+    },
+  });
+
+  // Check if any experiments can be evaluated with this new data
+  if (script.scriptType) {
+    checkExperimentCompletion(script.scriptType).catch((err) =>
+      console.error('[scripts/performance] calibration check failed:', err),
+    );
+  }
 
   res.json(updated);
 });

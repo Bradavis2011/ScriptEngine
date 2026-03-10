@@ -173,7 +173,10 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   ]);
 }
 
-export async function generateScript(input: GenerateScriptInput): Promise<ScriptData> {
+export async function generateScript(
+  input: GenerateScriptInput,
+  promptOverride?: string,
+): Promise<ScriptData> {
   const model = getGenAI().getGenerativeModel({
     model: 'gemini-2.5-flash',
     generationConfig: {
@@ -182,7 +185,8 @@ export async function generateScript(input: GenerateScriptInput): Promise<Script
     },
   });
 
-  const typePrompt = SCRIPT_TYPE_PROMPTS[input.scriptType] ?? SCRIPT_TYPE_PROMPTS.niche_tip;
+  const typePrompt =
+    promptOverride ?? SCRIPT_TYPE_PROMPTS[input.scriptType] ?? SCRIPT_TYPE_PROMPTS.niche_tip;
   const seriesContext =
     input.seriesName && input.episodeNumber
       ? `This is episode ${input.episodeNumber} of the series "${input.seriesName}".`
