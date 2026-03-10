@@ -10,6 +10,7 @@ import { useAuth } from '@clerk/clerk-expo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { getScript, updateScriptStatus } from '@/lib/api';
 import { colors, spacing, radius } from '@/lib/theme';
@@ -17,6 +18,7 @@ import { GlowOrbs } from '@/components/GlowOrbs';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 const TEAL = '#03EDD6';
+const IS_EXPO_GO = Constants.executionEnvironment === 'storeClient';
 
 const SPEEDS = [
   { label: 'Slow', value: 0.6 },
@@ -160,16 +162,23 @@ export default function TeleprompterScreen() {
   const keepTake = async () => {
     let savedToLibrary = false;
     if (pendingUri) {
-      try {
-        const perm = await MediaLibrary.requestPermissionsAsync();
-        if (perm.granted) {
-          await MediaLibrary.saveToLibraryAsync(pendingUri);
-          savedToLibrary = true;
+      if (IS_EXPO_GO) {
+        Alert.alert(
+          'Video not saved',
+          'Expo Go cannot save videos to your camera roll. To save videos, install the ClipScript app via a device build.\n\nYour script is still marked as filmed.',
+        );
+      } else {
+        try {
+          const perm = await MediaLibrary.requestPermissionsAsync();
+          if (perm.granted) {
+            await MediaLibrary.saveToLibraryAsync(pendingUri);
+            savedToLibrary = true;
+          } else {
+            Alert.alert('Permission denied', 'Grant photo/video access in Settings to save videos.');
+          }
+        } catch (e: any) {
+          Alert.alert('Save failed', e?.message ?? 'Could not save to camera roll.');
         }
-        // If permission denied or unsupported in this build, silently continue —
-        // success screen shows "Take Complete" instead of "Saved to Camera Roll"
-      } catch {
-        // Expo Go restricts video saves — silently continue, still mark as filmed
       }
     }
     try {
