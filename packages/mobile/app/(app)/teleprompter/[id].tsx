@@ -285,7 +285,7 @@ export default function TeleprompterScreen() {
             <Ionicons name="videocam-outline" size={16} color={colors.white} />
             <Text style={styles.retakeBtnText}>Film Again</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.keepBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.keepBtn} onPress={() => router.replace('/(app)/camera')}>
             <Text style={styles.keepBtnText}>Done</Text>
           </TouchableOpacity>
         </View>

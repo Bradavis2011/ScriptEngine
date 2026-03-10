@@ -1,8 +1,8 @@
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Alert, Share,
+  ActivityIndicator, Alert, Share, Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -24,6 +24,8 @@ export default function ScriptDetailScreen() {
   const router = useRouter();
   const { getToken } = useAuth();
   const qc = useQueryClient();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = (Platform.OS === 'ios' ? 60 : 56) + insets.bottom;
   const [markingPosted, setMarkingPosted] = useState(false);
 
   const { data: script, isLoading } = useQuery({
@@ -124,12 +126,12 @@ export default function ScriptDetailScreen() {
           <Text style={styles.shareBtnText}>Share Script</Text>
         </TouchableOpacity>
 
-        <View style={{ height: 120 }} />
+        <View style={{ height: tabBarHeight + 80 }} />
       </ScrollView>
 
-      {/* Sticky CTAs */}
+      {/* Sticky CTAs — paddingBottom clears the floating tab bar */}
       {script.filmingStatus === 'ready' && (
-        <View style={styles.sticky}>
+        <View style={[styles.sticky, { paddingBottom: tabBarHeight + 8 }]}>
           <TouchableOpacity style={styles.filmBtn} onPress={() => router.push(`/(app)/teleprompter/${id}`)}>
             <Ionicons name="videocam" size={20} color={colors.background} />
             <Text style={styles.filmBtnText}>Film With Teleprompter</Text>
@@ -138,7 +140,7 @@ export default function ScriptDetailScreen() {
       )}
 
       {script.filmingStatus === 'filmed' && (
-        <View style={styles.sticky}>
+        <View style={[styles.sticky, { paddingBottom: tabBarHeight + 8 }]}>
           <View style={styles.stickyRow}>
             <TouchableOpacity
               style={styles.refilmBtn}
@@ -164,7 +166,7 @@ export default function ScriptDetailScreen() {
       )}
 
       {script.filmingStatus === 'posted' && (
-        <View style={styles.sticky}>
+        <View style={[styles.sticky, { paddingBottom: tabBarHeight + 8 }]}>
           <TouchableOpacity
             style={[styles.filmBtn, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}
             onPress={() => router.push(`/(app)/teleprompter/${id}`)}
@@ -237,7 +239,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   shareBtnText: { fontSize: 13, fontWeight: '600', color: colors.muted },
-  sticky: { padding: spacing.md, paddingBottom: spacing.lg },
+  sticky: { padding: spacing.md },
   stickyRow: { flexDirection: 'row', gap: spacing.sm },
   filmBtn: {
     flex: 1, backgroundColor: colors.accent, borderRadius: radius.lg,
