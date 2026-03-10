@@ -19,12 +19,13 @@ router.use(express.raw({ type: 'application/json' }));
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? 'https://clipscriptai.com';
 
+// Five distinct types — no duplicates — each produces a filmable standalone video
 const PACK_SCRIPT_TYPES = [
-  'niche_tip',
-  'data_drop',
+  'quick_hook',
   'trend_take',
-  'niche_tip_basic',
   'data_drop',
+  'story_hook',
+  'rapid_tip',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -84,6 +85,12 @@ router.post('/stripe', async (req: Request, res: Response) => {
   if (orderType === 'pack') {
     try {
       // A/B test: each pack script uses dynamic prompt versioning (80/20 current/challenger)
+      const packContext = [
+        topic && `Broad topic / angle: ${topic}`,
+        'Keep it high-level and approachable — optimised for first-time viewers.',
+        'Each script must work completely standalone with no prior context.',
+      ].filter(Boolean).join('\n');
+
       const scripts = await Promise.all(
         PACK_SCRIPT_TYPES.map(async (scriptType) => {
           const { prompt } = await getActivePrompt(scriptType);
@@ -91,7 +98,8 @@ router.post('/stripe', async (req: Request, res: Response) => {
             {
               niche: niche || 'general lifestyle',
               scriptType,
-              additionalContext: topic ? `Focus on this topic: ${topic}` : undefined,
+              additionalContext: packContext,
+              targetDuration: '30-45',
             },
             prompt,
           );
@@ -146,21 +154,24 @@ router.post('/stripe', async (req: Request, res: Response) => {
         youtubeInsights,
       });
 
-      // 3. Also generate one ready-to-film script for the email
-      const additionalContext = [
+      // 3. Generate 3 full ready-to-film scripts — varied types, refined for the specific angle
+      const conciergeContext = [
         topic && `Topic and angle: ${topic}`,
         brief && `Additional context: ${brief}`,
         audience && `Target audience: ${audience}`,
-        'Make this exceptional — paid concierge order.',
+        goals && `Creator goals: ${goals}`,
+        'This is a paid concierge order. Make every line exceptional.',
+        'Go deep on the specific angle — no generic filler.',
       ]
         .filter(Boolean)
         .join('\n');
 
-      const sampleScript = await generateScript({
-        niche: niche || 'general lifestyle',
-        scriptType: 'niche_tip',
-        additionalContext,
-      });
+      const [script1, script2, script3] = await Promise.all([
+        generateScript({ niche: niche || 'general lifestyle', scriptType: 'trend_take',  additionalContext: conciergeContext }),
+        generateScript({ niche: niche || 'general lifestyle', scriptType: 'data_drop',   additionalContext: conciergeContext }),
+        generateScript({ niche: niche || 'general lifestyle', scriptType: 'story_hook',  additionalContext: conciergeContext }),
+      ]);
+      const conciergeScripts = [script1, script2, script3];
 
       await prisma.conciergeOrder.update({
         where: { stripePaymentId },
@@ -169,7 +180,8 @@ router.post('/stripe', async (req: Request, res: Response) => {
 
       await sendConciergeDelivery({
         toEmail: email,
-        sampleScript,
+        sampleScript: script1,
+        conciergeScripts,
         niche: niche || 'lifestyle',
         topic,
         reportUrl,

@@ -59,6 +59,13 @@ const SCRIPT_TYPE_PROMPTS: Record<string, string> = {
     'Give a single practical, broadly useful tip about the given topic. Keep it accessible, beginner-friendly, and general. No deep research, no niche-specific jargon, no data citations.',
   series_episode:
     'Write a short-form video script for an episode in an ongoing series. Reference that it is part of a series and tease the next episode.',
+  // Pack-optimised types — short, punchy, broad, standalone
+  quick_hook:
+    'Write an ultra-punchy short-form video script. Open with a single bold, surprising, or controversial statement that forces a reaction. One clear idea, no fluff. Every word earns its place.',
+  story_hook:
+    'Write a short-form video script that opens with a relatable 2-sentence micro-story or personal moment, then pivots immediately to a universal insight the viewer can act on. Make them feel seen.',
+  rapid_tip:
+    'Write a short-form video script laser-focused on ONE single ultra-specific actionable tip. State it in the cold open, prove it works in one sentence, then tell them exactly how to do it right now.',
 };
 
 export interface GenerateScriptInput {
@@ -67,6 +74,7 @@ export interface GenerateScriptInput {
   seriesName?: string;
   episodeNumber?: number;
   additionalContext?: string;
+  targetDuration?: '30-45' | '45-75';  // defaults to 45-75
 }
 
 export interface ScriptData {
@@ -202,9 +210,9 @@ ${seriesContext}
 ${input.additionalContext ?? ''}
 
 Requirements:
-- Total video length: 45-75 seconds when read at a natural pace
+- Total video length: ${input.targetDuration === '30-45' ? '30-45 seconds — keep it tight, punchy, and instantly rewatchable' : '45-75 seconds when read at a natural pace'}
 - Cold open must hook the viewer in the first 3 seconds
-- Each section should take 10-15 seconds to deliver
+- Each section should take ${input.targetDuration === '30-45' ? '7-10' : '10-15'} seconds to deliver
 - teleprompterText is the full script concatenated for use in a teleprompter (no headings, just words to say)
 - caption is optimized for the feed (under 150 chars, no hashtags)
 - hashtags: 5-8 niche-relevant tags without the # symbol

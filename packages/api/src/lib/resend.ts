@@ -109,27 +109,38 @@ export async function sendPackDelivery({
 export async function sendConciergeDelivery({
   toEmail,
   sampleScript,
+  conciergeScripts,
   niche,
   topic,
   reportUrl,
 }: {
   toEmail: string;
   sampleScript: ScriptData;
+  conciergeScripts?: ScriptData[];
   niche: string;
   topic?: string;
   reportUrl?: string;
 }) {
+  const scripts = conciergeScripts ?? [sampleScript];
+  const scriptLabels = ['Trend Take', 'Data Drop', 'Story Hook'];
+
+  const scriptsHtml = scripts.map((s, i) => `
+    <h2 style="font-size:17px;margin:28px 0 4px;">Script ${i + 1} of ${scripts.length} — ${scriptLabels[i] ?? 'Script'}</h2>
+    <p style="color:#555;font-size:13px;margin-bottom:12px;">${s.totalDurationSeconds}s · film with teleprompter text below</p>
+    ${scriptEmailHtml(s)}
+  `).join('<hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb;" />');
+
   await getResend().emails.send({
     from: FROM,
     to: toEmail,
-    subject: `Your ClipScript Strategy Brief is ready 🎬`,
+    subject: `Your ClipScript Strategy Brief is ready — 3 scripts inside`,
     html: `
     <div style="font-family:sans-serif;max-width:640px;margin:0 auto;color:#111;">
       <h1 style="font-size:24px;margin-bottom:8px;">Your Content Strategy Brief is Ready</h1>
       <p style="color:#555;font-size:15px;margin-bottom:4px;">
         We've researched your topic${topic ? ` "<strong>${topic}</strong>"` : ''}, analyzed what's
-        performing on YouTube in the <strong>${niche}</strong> space, and built a full content
-        strategy document for you.
+        performing in the <strong>${niche}</strong> space, and built a full research-grade content
+        strategy document — plus 3 ready-to-film scripts below.
       </p>
       <p style="color:#555;font-size:14px;margin-bottom:8px;">
         Your brief includes: premise refinement, audience profile, keyword + trend analysis,
@@ -138,20 +149,21 @@ export async function sendConciergeDelivery({
       </p>
       ${reportUrl ? viewReportBtn(reportUrl) : ''}
       <hr style="margin:28px 0;border:none;border-top:1px solid #e5e7eb;" />
-      <h2 style="font-size:18px;margin-bottom:4px;">Ready-to-film script</h2>
+      <h2 style="font-size:18px;margin-bottom:4px;">Your 3 Ready-to-Film Scripts</h2>
       <p style="color:#555;font-size:14px;margin-bottom:16px;">
-        Film this while you review the full brief.
+        Each script covers a different angle on your topic. Film them over the next week.
       </p>
-      ${scriptEmailHtml(sampleScript)}
-      <div style="background:#f9f9f9;border-radius:8px;padding:16px;margin-top:8px;">
+      ${scriptsHtml}
+      <div style="background:#f9f9f9;border-radius:8px;padding:16px;margin-top:24px;">
         <p style="font-size:14px;margin:0;">
-          <strong>2 tweaks included</strong> — reply to this email with what you'd like adjusted
-          (wording, tone, angle). Tweaks = refinements, not full rewrites.
+          <strong>2 refinement rounds included</strong> — reply to this email with what you'd like
+          adjusted on any script (wording, angle, tone, depth). These are full revisions, not
+          minor tweaks.
         </p>
       </div>
       <hr style="margin:32px 0;border:none;border-top:1px solid #e5e7eb;" />
       <p style="color:#888;font-size:12px;">
-        ClipScript — reply here for your tweaks · <a href="mailto:hello@clipscriptai.com">hello@clipscriptai.com</a>
+        ClipScript — reply here for your refinements · <a href="mailto:hello@clipscriptai.com">hello@clipscriptai.com</a>
       </p>
     </div>`,
   });

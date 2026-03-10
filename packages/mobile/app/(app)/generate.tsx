@@ -185,11 +185,11 @@ export default function GenerateScreen() {
           )}
 
           <Text style={styles.sectionLabel}>
-            Additional context <Text style={styles.optional}>(optional)</Text>
+            Angle or topic <Text style={styles.optional}>(optional)</Text>
           </Text>
           <TextInput
             style={styles.contextInput}
-            placeholder={'e.g. "focus on beginner mistakes" or "use a personal story hook"'}
+            placeholder={'e.g. "biggest mistakes beginners make" or "why I quit the gym"'}
             placeholderTextColor={colors.muted}
             value={context}
             onChangeText={setContext}
