@@ -9,6 +9,7 @@ import seriesRouter from './routes/series';
 import checkoutRouter from './routes/checkout';
 import reportRouter from './routes/report';
 import calibrationRouter from './routes/calibration';
+import growthRouter from './growth/routes/growth';
 
 export function createApp() {
   const app = express();
@@ -45,6 +46,7 @@ export function createApp() {
   app.use('/api/checkout', checkoutRouter);
   app.use('/api/report', reportRouter);
   app.use('/api/calibration', calibrationRouter);
+  app.use('/api/growth', growthRouter);
 
   // 404 fallthrough
   app.use((_req, res) => {

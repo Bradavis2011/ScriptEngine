@@ -14,6 +14,7 @@ model Tenant {
   niche         String
   tier          String   @default("free") // free | pro | founders | team
   scriptsPerDay Int      @default(1)
+  isAdmin       Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   scripts       Script[]
@@ -86,6 +87,105 @@ model ExperimentRun {
   log             Json?     // detailed run log
   createdAt       DateTime  @default(now())
   completedAt     DateTime?
+}
+
+model RedditThread {
+  id              String    @id @default(cuid())
+  redditId        String    @unique
+  subreddit       String
+  title           String
+  selftext        String?
+  author          String
+  url             String
+  score           Int       @default(0)
+  numComments     Int       @default(0)
+  matchedKeywords String[]
+  relevanceScore  Float?
+  status          String    @default("discovered") // discovered | queued | commented | skipped | failed
+  commentId       String?
+  commentBody     String?
+  commentKarma    Int?
+  authorReplied   Boolean   @default(false)
+  templateVersion String?
+  errorMessage    String?
+  discoveredAt    DateTime  @default(now())
+  commentedAt     DateTime?
+  lastCheckedAt   DateTime?
+
+  @@index([subreddit, status])
+  @@index([status, discoveredAt])
+}
+
+model CreatorProspect {
+  id                String    @id @default(cuid())
+  youtubeChannelId  String    @unique
+  channelTitle      String
+  subscriberCount   Int
+  videoCount        Int
+  description       String?
+  topVideoTitles    String[]
+  relevanceScore    Float?
+  personalizedDm    String?
+  warmingComment    String?
+  status            String    @default("discovered") // discovered | briefed | contacted | responded | converted | skipped
+  outreachChannel   String?
+  contactInfo       String?
+  notes             String?
+  dmTemplateVersion String?
+  discoveredAt      DateTime  @default(now())
+  contactedAt       DateTime?
+  respondedAt       DateTime?
+
+  @@index([status])
+  @@index([relevanceScore])
+}
+
+model PainPoint {
+  id              String    @id @default(cuid())
+  source          String
+  sourceId        String    @unique
+  sourceUrl       String
+  subreddit       String?
+  title           String?
+  body            String
+  author          String
+  painIntensity   Float
+  relevance       Float
+  actionability   Float
+  overallScore    Float
+  categories      String[]
+  marketingAngle  String?
+  productInsight  String?
+  usedInCopy      Boolean   @default(false)
+  discoveredAt    DateTime  @default(now())
+
+  @@index([overallScore])
+}
+
+model GrowthTemplate {
+  id            String    @id @default(cuid())
+  contentType   String    // reddit_comment | creator_dm | warming_comment
+  template      String
+  status        String    @default("current") // current | challenger | retired
+  source        String    @default("manual")  // manual | ai_growth_lab
+  parentId      String?
+  avgScore      Float?
+  usageCount    Int       @default(0)
+  createdAt     DateTime  @default(now())
+
+  @@index([contentType, status])
+}
+
+model GrowthEvent {
+  id          String    @id @default(cuid())
+  channel     String    // reddit | creator | pain_point | learning
+  eventType   String    // discovery | comment | dm | brief_sent | karma_check | learning_run
+  entityId    String?
+  data        Json?
+  createdAt   DateTime  @default(now())
+
+  @@index([channel, eventType])
+  @@index([createdAt])
 }
 
 model ConciergeOrder {

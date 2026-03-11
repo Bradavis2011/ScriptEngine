@@ -27,11 +27,35 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
+let stopGrowthWorkers: (() => Promise<void>) | undefined;
+
 try {
   const app = createApp();
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`ClipScript API listening on port ${PORT}`);
   });
+
+  if (process.env.REDIS_URL) {
+    import('./growth/startWorkers')
+      .then(({ startGrowthWorkers, stopGrowthWorkers: stop }) => {
+        stopGrowthWorkers = stop;
+        return startGrowthWorkers();
+      })
+      .catch((err) => {
+        console.error('[growth] Failed to start workers:', err);
+      });
+  } else {
+    console.log('[growth] REDIS_URL not set — growth workers disabled');
+  }
+
+  const shutdown = (signal: string) => {
+    console.log(`Received ${signal}, shutting down...`);
+    const cleanup = stopGrowthWorkers ? stopGrowthWorkers() : Promise.resolve();
+    cleanup.finally(() => server.close(() => process.exit(0)));
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 } catch (err) {
   console.error('FATAL: failed to start app:', err);
   process.exit(1);
