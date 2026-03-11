@@ -5,6 +5,7 @@ import { runCreatorDiscovery } from './workers/creatorDiscovery';
 import { runPainPointScrape } from './workers/painPointScrape';
 import { runGrowthLearning } from './workers/growthLearning';
 import { runDailyBrief } from './workers/dailyBrief';
+import { seedGrowthTemplates } from './services/growthTemplates';
 
 type WorkerHandler = (job: Job) => Promise<void>;
 
@@ -59,6 +60,10 @@ export async function startGrowthWorkers(): Promise<void> {
 
     workers.push(worker);
   }
+
+  // Seed default templates on first boot (idempotent — skips if already seeded)
+  const seeded = await seedGrowthTemplates();
+  if (seeded > 0) console.log(`[growth] Seeded ${seeded} default growth templates`);
 
   console.log(`[growth] Workers started: ${Object.keys(WORKER_HANDLERS).join(', ')}`);
 }
