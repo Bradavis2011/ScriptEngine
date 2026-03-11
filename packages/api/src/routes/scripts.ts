@@ -7,7 +7,7 @@ import { computeEngagementScore, checkExperimentCompletion } from '../lib/calibr
 
 const router = Router();
 
-const SCRIPT_TYPES = ['series_episode', 'data_drop', 'trend_take', 'niche_tip'] as const;
+const SCRIPT_TYPES = ['series_episode', 'data_drop', 'trend_take', 'niche_tip', 'niche_tip_basic'] as const;
 type ScriptType = (typeof SCRIPT_TYPES)[number];
 
 // GET /api/scripts — all scripts for tenant, optional ?status= filter
@@ -197,8 +197,16 @@ router.post('/:id/performance', requireAuth, async (req, res: Response) => {
     follows?: number;
   };
 
-  if (views == null || views < 0) {
-    res.status(400).json({ error: 'views is required and must be >= 0' });
+  // Validate all fields are numbers and non-negative
+  const numFields = { views, likes, shares, follows };
+  for (const [key, val] of Object.entries(numFields)) {
+    if (val != null && (typeof val !== 'number' || val < 0 || !Number.isFinite(val))) {
+      res.status(400).json({ error: `${key} must be a non-negative number` });
+      return;
+    }
+  }
+  if (views == null) {
+    res.status(400).json({ error: 'views is required' });
     return;
   }
 

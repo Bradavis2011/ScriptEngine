@@ -155,10 +155,15 @@ REPORT SECTIONS (include all, in this order):
 
 Be SPECIFIC. Use the YouTube data. Write hooks that would actually make someone stop scrolling. This is a $50 paid deliverable.`.trim();
 
-  const result = await model.generateContent(prompt);
+  const result = await withTimeout(
+    model.generateContent(prompt),
+    BRIEF_TIMEOUT_MS,
+    'Gemini generateResearchBrief',
+  );
   return result.response.text();
 }
 
+const BRIEF_TIMEOUT_MS = 120_000; // 120 s — briefs are large generations, no Railway request window constraint
 const SCRIPT_TIMEOUT_MS = 55_000; // 55 s — stay inside Railway's 60 s request window
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {

@@ -17,7 +17,14 @@
  */
 import 'dotenv/config';
 import { runExperimentCycle, LabRunResult } from '../lib/promptLab';
-import { SEED_PROMPTS } from '../lib/promptVersions';
+import {
+  SEED_PROMPTS,
+  getCurrentPrompt,
+  seedPromptVersions,
+  createChallenger,
+  promoteChallenger,
+} from '../lib/promptVersions';
+import { prisma } from '../lib/prisma';
 import { readTodaysExperiments } from '../lib/experimentLog';
 
 const SCRIPT_TYPES = Object.keys(SEED_PROMPTS);
@@ -43,10 +50,19 @@ async function main() {
   console.log(`Estimated time: ~${types.length * maxCycles * 2} minutes`);
   console.log('');
 
-  // Track best prompts — start with seeds
+  // Ensure seed prompt versions exist in DB
+  const seeded = await seedPromptVersions();
+  if (seeded > 0) {
+    console.log(`[runner] Seeded ${seeded} initial prompt versions in DB`);
+  }
+
+  // Load current best prompts from DB (not hardcoded seeds)
   const bestPrompts: Record<string, string> = {};
+  const bestPromptIds: Record<string, string | null> = {};
   for (const t of types) {
-    bestPrompts[t] = SEED_PROMPTS[t] ?? SEED_PROMPTS.niche_tip;
+    const { prompt, promptVersionId } = await getCurrentPrompt(t);
+    bestPrompts[t] = prompt;
+    bestPromptIds[t] = promptVersionId;
   }
 
   const allResults: LabRunResult[] = [];
@@ -59,9 +75,27 @@ async function main() {
         const result = await runExperimentCycle(bestPrompts[scriptType], scriptType);
         allResults.push(result);
 
-        if (result.result === 'promoted') {
+        if (result.result === 'promoted' && result.challengerPrompt) {
+          // Persist winning prompt to DB so it affects production traffic
+          const challengerId = await createChallenger(
+            scriptType,
+            result.challengerPrompt,
+            'ai_lab',
+            bestPromptIds[scriptType] ?? undefined,
+          );
+          await promoteChallenger(scriptType, challengerId);
+
+          // Update local tracking
           bestPrompts[scriptType] = result.challengerPrompt;
-          console.log(`[runner] PROMOTED new prompt for ${scriptType}`);
+          bestPromptIds[scriptType] = challengerId;
+
+          // Update scores on the new version
+          await prisma.promptVersion.update({
+            where: { id: challengerId },
+            data: { avgAiScore: result.challengerAvgScore },
+          });
+
+          console.log(`[runner] PROMOTED and persisted new prompt for ${scriptType}`);
         }
       } catch (err) {
         console.error(`[runner] Experiment failed for ${scriptType}:`, err);
@@ -79,7 +113,7 @@ async function main() {
   console.log(`Rejected: ${rejected.length}`);
 
   if (promoted.length > 0) {
-    console.log('\nWinning prompts:');
+    console.log('\nWinning prompts (persisted to DB):');
     for (const p of promoted) {
       console.log(`\n  [${p.scriptType}] +${(p.improvement * 100).toFixed(1)}%`);
       console.log(`  Score: ${p.currentAvgScore.toFixed(2)} -> ${p.challengerAvgScore.toFixed(2)}`);
@@ -91,9 +125,12 @@ async function main() {
 
   const todays = readTodaysExperiments();
   console.log(`Total experiments logged today: ${todays.length}`);
+
+  await prisma.$disconnect();
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error('Fatal error:', err);
+  await prisma.$disconnect();
   process.exit(1);
 });

@@ -18,38 +18,47 @@ export const SEED_PROMPTS: Record<string, string> = {
 /**
  * Get the active prompt for a script type.
  * 80% chance of returning "current", 20% chance of "challenger" (if one exists).
- * Falls back to seed prompts if no DB versions exist.
+ * Falls back to seed prompts if DB is unavailable or has no versions.
  *
  * Returns the prompt text and the PromptVersion id (null if using seed).
  */
 export async function getActivePrompt(
   scriptType: string,
 ): Promise<{ prompt: string; promptVersionId: string | null }> {
-  const versions = await prisma.promptVersion.findMany({
-    where: {
-      scriptType,
-      status: { in: ['current', 'challenger'] },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  try {
+    const versions = await prisma.promptVersion.findMany({
+      where: {
+        scriptType,
+        status: { in: ['current', 'challenger'] },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
 
-  const current = versions.find((v) => v.status === 'current');
-  const challenger = versions.find((v) => v.status === 'challenger');
+    const current = versions.find((v) => v.status === 'current');
+    const challenger = versions.find((v) => v.status === 'challenger');
 
-  // No DB versions yet — use seed
-  if (!current) {
+    // No DB versions yet — use seed
+    if (!current) {
+      return {
+        prompt: SEED_PROMPTS[scriptType] ?? SEED_PROMPTS.niche_tip,
+        promptVersionId: null,
+      };
+    }
+
+    // If challenger exists, 20% chance of using it
+    if (challenger && Math.random() < 0.2) {
+      return { prompt: challenger.prompt, promptVersionId: challenger.id };
+    }
+
+    return { prompt: current.prompt, promptVersionId: current.id };
+  } catch (err) {
+    // DB error — fall back to seed prompts so script generation still works
+    console.error('[promptVersions] DB error in getActivePrompt, falling back to seed:', err);
     return {
       prompt: SEED_PROMPTS[scriptType] ?? SEED_PROMPTS.niche_tip,
       promptVersionId: null,
     };
   }
-
-  // If challenger exists, 20% chance of using it
-  if (challenger && Math.random() < 0.2) {
-    return { prompt: challenger.prompt, promptVersionId: challenger.id };
-  }
-
-  return { prompt: current.prompt, promptVersionId: current.id };
 }
 
 /**
@@ -96,7 +105,7 @@ export async function seedPromptVersions(): Promise<number> {
 
 /**
  * Create a challenger prompt version for a script type.
- * Retires any existing challenger first.
+ * Retires any existing challenger first. Atomic via transaction.
  */
 export async function createChallenger(
   scriptType: string,
@@ -104,33 +113,39 @@ export async function createChallenger(
   source: string = 'ai_lab',
   parentId?: string,
 ): Promise<string> {
-  // Retire any existing challenger
-  await prisma.promptVersion.updateMany({
-    where: { scriptType, status: 'challenger' },
-    data: { status: 'retired' },
+  const result = await prisma.$transaction(async (tx) => {
+    // Retire any existing challenger
+    await tx.promptVersion.updateMany({
+      where: { scriptType, status: 'challenger' },
+      data: { status: 'retired' },
+    });
+
+    const version = await tx.promptVersion.create({
+      data: { scriptType, prompt, status: 'challenger', source, parentId },
+    });
+
+    return version;
   });
 
-  const version = await prisma.promptVersion.create({
-    data: { scriptType, prompt, status: 'challenger', source, parentId },
-  });
-
-  return version.id;
+  return result.id;
 }
 
 /**
- * Promote a challenger to current. Retires the old current.
+ * Promote a challenger to current. Retires the old current. Atomic via transaction.
  */
 export async function promoteChallenger(
   scriptType: string,
   challengerId: string,
 ): Promise<void> {
-  await prisma.promptVersion.updateMany({
-    where: { scriptType, status: 'current' },
-    data: { status: 'retired' },
-  });
+  await prisma.$transaction(async (tx) => {
+    await tx.promptVersion.updateMany({
+      where: { scriptType, status: 'current' },
+      data: { status: 'retired' },
+    });
 
-  await prisma.promptVersion.update({
-    where: { id: challengerId },
-    data: { status: 'current' },
+    await tx.promptVersion.update({
+      where: { id: challengerId },
+      data: { status: 'current' },
+    });
   });
 }

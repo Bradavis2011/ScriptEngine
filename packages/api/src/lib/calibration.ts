@@ -98,6 +98,15 @@ export async function checkExperimentCompletion(scriptType: string): Promise<voi
   }
 }
 
+/**
+ * Normalize engagement score to 0-10 scale for comparability with AI scores.
+ * Typical engagement scores range 0-200; we cap at 200 and map to 0-10.
+ */
+function normalizeEngagementScore(raw: number): number {
+  const capped = Math.min(raw, 200);
+  return (capped / 200) * 10;
+}
+
 function avgScoreFromScripts(
   scripts: Array<{ performance: any; aiQualityScore: number | null }>,
   evaluationType: string,
@@ -111,12 +120,12 @@ function avgScoreFromScripts(
       }
       if (evaluationType === 'user_reported') {
         const perf = s.performance as PerformanceData | null;
-        return sum + (perf ? computeEngagementScore(perf) : 0);
+        return sum + (perf ? normalizeEngagementScore(computeEngagementScore(perf)) : 0);
       }
-      // dual: weighted blend
+      // dual: weighted blend — both normalized to 0-10 scale
       const aiScore = (s.aiQualityScore ?? 0) * 0.3;
       const perf = s.performance as PerformanceData | null;
-      const engScore = perf ? computeEngagementScore(perf) * 0.7 : 0;
+      const engScore = perf ? normalizeEngagementScore(computeEngagementScore(perf)) * 0.7 : 0;
       return sum + aiScore + engScore;
     }, 0) / scripts.length
   );

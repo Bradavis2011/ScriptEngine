@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { ScriptData } from './gemini';
+import { escapeHtml } from './escapeHtml';
 
 let _resend: Resend | null = null;
 function getResend(): Resend {
@@ -33,28 +34,28 @@ function scriptEmailHtml(s: ScriptData): string {
     .map(
       (sec) => `
     <div style="margin-bottom:16px;">
-      <strong style="font-size:12px;text-transform:uppercase;color:#666;">${sec.heading}</strong><br/>
-      <p style="margin:4px 0;">${sec.script}</p>
-      <em style="color:#999;font-size:12px;">B-Roll: ${sec.bRollSuggestion}</em>
+      <strong style="font-size:12px;text-transform:uppercase;color:#666;">${escapeHtml(sec.heading)}</strong><br/>
+      <p style="margin:4px 0;">${escapeHtml(sec.script)}</p>
+      <em style="color:#999;font-size:12px;">B-Roll: ${escapeHtml(sec.bRollSuggestion)}</em>
     </div>`,
     )
     .join('');
-  const hashtags = s.hashtags.map((h) => `#${h}`).join(' ');
+  const hashtags = s.hashtags.map((h) => `#${escapeHtml(h)}`).join(' ');
 
   return `
   <div style="border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
     <p style="font-size:12px;font-weight:600;color:#7c3aed;text-transform:uppercase;margin:0 0 12px;">
       ${s.totalDurationSeconds}s script
     </p>
-    <p style="font-size:18px;font-weight:700;margin:0 0 16px;">"${s.coldOpen}"</p>
+    <p style="font-size:18px;font-weight:700;margin:0 0 16px;">"${escapeHtml(s.coldOpen)}"</p>
     ${sectionsHtml}
     <div style="background:#f9f9f9;padding:14px;border-radius:8px;margin-top:16px;">
       <p style="font-size:12px;color:#666;margin:0 0 6px;font-weight:600;">TELEPROMPTER TEXT</p>
-      <p style="margin:0;line-height:1.7;">${s.teleprompterText}</p>
+      <p style="margin:0;line-height:1.7;">${escapeHtml(s.teleprompterText)}</p>
     </div>
     <div style="margin-top:14px;">
       <p style="font-size:12px;color:#666;margin:0 0 4px;font-weight:600;">CAPTION</p>
-      <p style="margin:0;">${s.caption}</p>
+      <p style="margin:0;">${escapeHtml(s.caption)}</p>
       <p style="margin:4px 0 0;color:#888;font-size:12px;">${hashtags}</p>
     </div>
   </div>`;
@@ -86,7 +87,7 @@ export async function sendPackDelivery({
     <div style="font-family:sans-serif;max-width:640px;margin:0 auto;color:#111;">
       <h1 style="font-size:24px;margin-bottom:4px;">Your Scripts Are Ready</h1>
       <p style="color:#555;margin-bottom:8px;">
-        Niche: <strong>${niche}</strong> — Topic: <strong>${topic || 'general'}</strong>
+        Niche: <strong>${escapeHtml(niche)}</strong> — Topic: <strong>${escapeHtml(topic || 'general')}</strong>
       </p>
       ${reportUrl ? viewReportBtn(reportUrl) : ''}
       <p style="color:#555;margin-bottom:28px;font-size:14px;">
@@ -127,8 +128,8 @@ export async function sendConciergeDelivery({
     <div style="font-family:sans-serif;max-width:640px;margin:0 auto;color:#111;">
       <h1 style="font-size:24px;margin-bottom:8px;">Your Content Strategy Brief is Ready</h1>
       <p style="color:#555;font-size:15px;margin-bottom:4px;">
-        We've researched your topic${topic ? ` "<strong>${topic}</strong>"` : ''}, analyzed what's
-        performing on YouTube in the <strong>${niche}</strong> space, and built a full content
+        We've researched your topic${topic ? ` "<strong>${escapeHtml(topic)}</strong>"` : ''}, analyzed what's
+        performing on YouTube in the <strong>${escapeHtml(niche)}</strong> space, and built a full content
         strategy document for you.
       </p>
       <p style="color:#555;font-size:14px;margin-bottom:8px;">

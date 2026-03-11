@@ -147,6 +147,21 @@ export async function runExperimentCycle(
 
   // Step 1: Score current prompt
   const currentResults = await generateAndScore(currentPrompt, scriptType, batchSize);
+
+  // Guard against empty results (e.g., Gemini is down)
+  if (currentResults.length === 0) {
+    console.log(`[promptLab] No scripts generated — Gemini may be down. Skipping.`);
+    return {
+      scriptType,
+      currentPrompt,
+      challengerPrompt: '',
+      currentAvgScore: 0,
+      challengerAvgScore: 0,
+      result: 'inconclusive',
+      improvement: 0,
+    };
+  }
+
   const currentAvg =
     currentResults.reduce((sum, r) => sum + r.overall, 0) / currentResults.length;
   console.log(`[promptLab] Current avg score: ${currentAvg.toFixed(2)}/10`);
@@ -163,12 +178,27 @@ export async function runExperimentCycle(
   // Step 3: Score challenger
   console.log(`[promptLab] Scoring challenger prompt (${batchSize} scripts)...`);
   const challengerResults = await generateAndScore(challengerPrompt, scriptType, batchSize);
+
+  // Guard against empty challenger results
+  if (challengerResults.length === 0) {
+    console.log(`[promptLab] No challenger scripts generated. Skipping.`);
+    return {
+      scriptType,
+      currentPrompt,
+      challengerPrompt,
+      currentAvgScore: currentAvg,
+      challengerAvgScore: 0,
+      result: 'inconclusive',
+      improvement: 0,
+    };
+  }
+
   const challengerAvg =
     challengerResults.reduce((sum, r) => sum + r.overall, 0) / challengerResults.length;
   console.log(`[promptLab] Challenger avg score: ${challengerAvg.toFixed(2)}/10`);
 
   // Step 4: Compare
-  const improvement = (challengerAvg - currentAvg) / currentAvg;
+  const improvement = currentAvg > 0 ? (challengerAvg - currentAvg) / currentAvg : 0;
   let result: 'promoted' | 'rejected' | 'inconclusive';
 
   if (currentResults.length < 3 || challengerResults.length < 3) {
@@ -194,7 +224,7 @@ export async function runExperimentCycle(
     currentAvgScore: currentAvg,
     challengerAvgScore: challengerAvg,
     result,
-    sampleSize: batchSize,
+    sampleSize: currentResults.length + challengerResults.length,
     topScript: allChallengerSorted[0]
       ? { coldOpen: allChallengerSorted[0].script.coldOpen, score: allChallengerSorted[0].overall }
       : undefined,
