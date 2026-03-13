@@ -193,7 +193,7 @@ model GrowthEvent {
 model SeoPage {
   id              String    @id @default(cuid())
   slug            String    @unique
-  pageType        String                    // "niche" | "niche_city" | "howto"
+  pageType        String                    // "niche" | "niche_city" | "howto" | "pain_point"
   targetKeyword   String
   niche           String
   city            String?
@@ -201,7 +201,9 @@ model SeoPage {
   metaDescription String
   h1              String
   contentJson     Json                      // { scripts[], tips[], faqs[], introHtml }
-  status          String    @default("draft")
+  status          String    @default("draft") // draft | queued | published | refresh_queued
+  painPointId     String?                   // source PainPoint id if auto-generated
+  refreshedAt     DateTime?                 // last time title/meta/content was auto-refreshed
   generatedAt     DateTime  @default(now())
   publishedAt     DateTime?
   updatedAt       DateTime  @updatedAt

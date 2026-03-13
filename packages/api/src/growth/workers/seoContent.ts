@@ -104,16 +104,19 @@ export async function runSeoContent(job: Job): Promise<void> {
 
   // Fetch existing published slugs
   const existing = await prisma.seoPage.findMany({
-    where: regenerate ? {} : { status: 'published' },
-    select: { slug: true },
+    where: regenerate ? {} : { status: { in: ['published', 'queued'] } },
+    select: { slug: true, status: true },
   });
-  const existingSlugs = new Set(existing.map((p) => p.slug));
+  const publishedSlugs = new Set(
+    existing.filter((p) => p.status === 'published').map((p) => p.slug),
+  );
 
   const toGenerate = regenerate
     ? pages
-    : pages.filter((def) => !existingSlugs.has(pageSlug(def)));
+    : pages.filter((def) => !publishedSlugs.has(pageSlug(def)));
 
-  console.log(`[seo-content] ${toGenerate.length} pages need generation`);
+  const skipped = pages.length - toGenerate.length;
+  console.log(`[seo-content] ${toGenerate.length} standard pages to generate, ${skipped} already published (skipped)`);
 
   let generated = 0;
   let failed = 0;
@@ -156,13 +159,51 @@ export async function runSeoContent(job: Job): Promise<void> {
       console.error(`[seo-content] Failed: ${slug}`, err);
     }
 
-    // Pace API calls — 2s between requests
-    if (toGenerate.indexOf(def) < toGenerate.length - 1) {
-      await sleep(2000);
-    }
+    await sleep(2000);
   }
 
-  console.log(`[seo-content] Complete. Generated: ${generated}, Failed: ${failed}`);
+  // ── Process pain-point / GSC-opportunity pages with status 'queued' ──
+  const queuedPages = await prisma.seoPage.findMany({
+    where: { status: 'queued' },
+  });
+
+  console.log(`[seo-content] ${queuedPages.length} queued pain-point/opportunity pages to generate`);
+
+  for (const qp of queuedPages) {
+    try {
+      console.log(`[seo-content] Generating queued page: ${qp.slug} ("${qp.targetKeyword}")`);
+
+      const content = await generateSeoPageContent({
+        pageType: (qp.pageType as any) === 'pain_point' ? 'howto' : (qp.pageType as any),
+        niche: qp.niche,
+        city: qp.city ?? undefined,
+        targetKeyword: qp.targetKeyword,
+      });
+
+      await prisma.seoPage.update({
+        where: { id: qp.id },
+        data: {
+          pageTitle: content.pageTitle,
+          metaDescription: content.metaDescription,
+          h1: content.h1,
+          contentJson: content as any,
+          status: 'published',
+          publishedAt: new Date(),
+        },
+      });
+
+      generated++;
+      console.log(`[seo-content] Queued page done: ${qp.slug}`);
+    } catch (err) {
+      failed++;
+      console.error(`[seo-content] Failed queued page: ${qp.slug}`, err);
+    }
+
+    await sleep(2000);
+  }
+
+  const totalPublishedNow = await prisma.seoPage.count({ where: { status: 'published' } });
+  console.log(`[seo-content] Complete. Generated: ${generated}, Failed: ${failed}, Skipped: ${skipped}, Total published in DB: ${totalPublishedNow}/70`);
 
   // Trigger Vercel deploy hook if any pages were generated
   if (generated > 0 && process.env.VERCEL_DEPLOY_HOOK_URL) {

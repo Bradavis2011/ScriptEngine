@@ -26,6 +26,13 @@ export interface GrowthDashboard {
     current: number;
     challengers: number;
   };
+  seo: {
+    totalPublished: number;
+    totalQueued: number;
+    painPointGenerated: number;
+    pagesRefreshedLast24h: number;
+    pagesGeneratedLast24h: number;
+  };
   recentEvents: Array<{
     id: string;
     channel: string;
@@ -35,6 +42,8 @@ export interface GrowthDashboard {
 }
 
 export async function getGrowthDashboard(): Promise<GrowthDashboard> {
+  const yesterday = new Date(Date.now() - 24 * 3600_000);
+
   const [
     redditByStatus,
     redditKarmaStats,
@@ -43,6 +52,10 @@ export async function getGrowthDashboard(): Promise<GrowthDashboard> {
     templateStats,
     recentEvents,
     authorRepliedCount,
+    seoByStatus,
+    painPointPageCount,
+    recentRefreshed,
+    recentGenerated,
   ] = await Promise.all([
     prisma.redditThread.groupBy({ by: ['status'], _count: true }),
     prisma.redditThread.aggregate({
@@ -61,15 +74,17 @@ export async function getGrowthDashboard(): Promise<GrowthDashboard> {
       select: { id: true, channel: true, eventType: true, createdAt: true },
     }),
     prisma.redditThread.count({ where: { status: 'commented', authorReplied: true } }),
+    prisma.seoPage.groupBy({ by: ['status'], _count: true }),
+    prisma.seoPage.count({ where: { pageType: 'pain_point' } }),
+    prisma.seoPage.count({
+      where: { refreshedAt: { gte: yesterday } },
+    }),
+    prisma.seoPage.count({
+      where: { publishedAt: { gte: yesterday }, pageType: { in: ['pain_point', 'howto'] } },
+    }),
   ]);
 
-  const redditCount = (s: string) =>
-    redditByStatus.find((r) => r.status === s)?._count ?? 0;
-  const creatorCount = (s: string) =>
-    creatorsByStatus.find((r) => r.status === s)?._count ?? 0;
-  const commentedCount = redditCount('commented');
-
-  // Top pain categories from highest-scoring pain points
+  // Top categories from highest-scoring pain points
   const painPointsWithCategories = await prisma.painPoint.findMany({
     select: { categories: true },
     orderBy: { overallScore: 'desc' },
@@ -85,6 +100,14 @@ export async function getGrowthDashboard(): Promise<GrowthDashboard> {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([cat]) => cat);
+
+  const redditCount = (s: string) =>
+    redditByStatus.find((r) => r.status === s)?._count ?? 0;
+  const creatorCount = (s: string) =>
+    creatorsByStatus.find((r) => r.status === s)?._count ?? 0;
+  const seoCount = (s: string) =>
+    seoByStatus.find((r) => r.status === s)?._count ?? 0;
+  const commentedCount = redditCount('commented');
 
   return {
     reddit: {
@@ -112,6 +135,13 @@ export async function getGrowthDashboard(): Promise<GrowthDashboard> {
     templates: {
       current: templateStats.find((t) => t.status === 'current')?._count ?? 0,
       challengers: templateStats.find((t) => t.status === 'challenger')?._count ?? 0,
+    },
+    seo: {
+      totalPublished: seoCount('published'),
+      totalQueued: seoCount('queued'),
+      painPointGenerated: painPointPageCount,
+      pagesRefreshedLast24h: recentRefreshed,
+      pagesGeneratedLast24h: recentGenerated,
     },
     recentEvents,
   };

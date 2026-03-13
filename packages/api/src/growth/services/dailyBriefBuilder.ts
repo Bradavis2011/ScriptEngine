@@ -66,6 +66,21 @@ export async function buildDailyBriefHtml(): Promise<string> {
     </div>`
       : '';
 
+  const seo = dashboard.seo;
+
+  const seoSection = `<div class="card">
+    <div class="label">SEO Engine</div>
+    <div class="stat-grid">
+      <div><div class="stat">${seo.totalPublished}</div><p>Pages Live</p></div>
+      <div><div class="stat">${seo.totalQueued}</div><p>Queued</p></div>
+      <div><div class="stat">${seo.painPointGenerated}</div><p>Pain-Point Pages</p></div>
+    </div>
+    <div style="margin-top:14px;">
+      <p style="margin:0 0 4px;color:#9ca3af;font-size:12px;">New pages (last 24h): <strong style="color:#e5e5e7;">${seo.pagesGeneratedLast24h}</strong></p>
+      <p style="margin:0;color:#9ca3af;font-size:12px;">Auto-refreshed (last 24h): <strong style="color:#e5e5e7;">${seo.pagesRefreshedLast24h}</strong></p>
+    </div>
+  </div>`;
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -117,6 +132,7 @@ export async function buildDailyBriefHtml(): Promise<string> {
       </div>
     </div>
 
+    ${seoSection}
     ${painPointsSection}
     ${creatorsSection}
     ${topCategoriesSection}
