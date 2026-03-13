@@ -5,6 +5,7 @@ import { runCreatorDiscovery } from './workers/creatorDiscovery';
 import { runPainPointScrape } from './workers/painPointScrape';
 import { runGrowthLearning } from './workers/growthLearning';
 import { runDailyBrief } from './workers/dailyBrief';
+import { runSeoContent } from './workers/seoContent';
 import { seedGrowthTemplates } from './services/growthTemplates';
 
 type WorkerHandler = (job: Job) => Promise<void>;
@@ -15,6 +16,7 @@ const WORKER_HANDLERS: Record<string, WorkerHandler> = {
   [QUEUE_NAMES.PAIN_POINT_SCRAPE]: runPainPointScrape,
   [QUEUE_NAMES.GROWTH_LEARNING]: runGrowthLearning,
   [QUEUE_NAMES.DAILY_BRIEF]: runDailyBrief,
+  [QUEUE_NAMES.SEO_CONTENT]: runSeoContent,
 };
 
 const workers: Worker[] = [];

@@ -12,6 +12,8 @@ model Tenant {
   clerkUserId   String   @unique
   email         String
   niche         String
+  city          String?  // primary market / location (e.g. "Austin TX")
+  callToAction  String?  // creator's standard CTA injected into scripts
   tier          String   @default("free") // free | pro | founders | team
   scriptsPerDay Int      @default(1)
   isAdmin       Boolean  @default(false)
@@ -186,6 +188,26 @@ model GrowthEvent {
 
   @@index([channel, eventType])
   @@index([createdAt])
+}
+
+model SeoPage {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  pageType        String                    // "niche" | "niche_city" | "howto"
+  targetKeyword   String
+  niche           String
+  city            String?
+  pageTitle       String
+  metaDescription String
+  h1              String
+  contentJson     Json                      // { scripts[], tips[], faqs[], introHtml }
+  status          String    @default("draft")
+  generatedAt     DateTime  @default(now())
+  publishedAt     DateTime?
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status])
+  @@index([pageType, niche])
 }
 
 model ConciergeOrder {

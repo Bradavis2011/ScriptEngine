@@ -214,6 +214,41 @@ router.get('/events', async (req: Request, res: Response) => {
   }
 });
 
+// ─── SEO Content Generation ───────────────────────────────────────────────────
+
+// POST /api/growth/seo/generate — queue the SEO content generation job
+router.post('/seo/generate', async (req: Request, res: Response) => {
+  try {
+    const queues = getQueues();
+    const seoQueue = queues.get(QUEUE_NAMES.SEO_CONTENT);
+    if (!seoQueue) {
+      res.status(503).json({ error: 'Growth workers not running (REDIS_URL not set)' });
+      return;
+    }
+    const regenerate = req.body?.regenerate === true;
+    await seoQueue.add('generate', { regenerate }, JOB_DEFAULTS);
+    res.json({ message: `SEO content generation job queued (regenerate=${regenerate})` });
+  } catch (err) {
+    console.error('[growth/seo/generate]', err);
+    res.status(500).json({ error: 'Failed to queue SEO generation job' });
+  }
+});
+
+// GET /api/growth/seo/status — draft vs published count
+router.get('/seo/status', async (_req: Request, res: Response) => {
+  try {
+    const [published, draft, total] = await Promise.all([
+      prisma.seoPage.count({ where: { status: 'published' } }),
+      prisma.seoPage.count({ where: { status: 'draft' } }),
+      prisma.seoPage.count(),
+    ]);
+    res.json({ published, draft, total, target: 70 });
+  } catch (err) {
+    console.error('[growth/seo/status]', err);
+    res.status(500).json({ error: 'Failed to get SEO status' });
+  }
+});
+
 // ─── Learning ─────────────────────────────────────────────────────────────────
 
 router.post('/learning/run', async (_req: Request, res: Response) => {

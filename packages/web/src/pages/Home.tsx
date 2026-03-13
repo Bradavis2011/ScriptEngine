@@ -8,7 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL ?? "https://scriptengine-production
 const STRIPE_FOUNDERS_URL = import.meta.env.VITE_STRIPE_FOUNDERS_URL as string | undefined;
 const STRIPE_PRO_MONTHLY_URL = import.meta.env.VITE_STRIPE_PRO_MONTHLY_URL as string | undefined;
 
-const NICHES = ["Fashion", "Fitness", "Food", "Tech", "Finance", "Business", "Beauty", "Travel", "Gaming", "Education"];
+const NICHES = ["Real Estate", "Finance", "Business", "Fashion", "Fitness", "Food", "Tech", "Beauty", "Travel", "Gaming", "Education"];
 const PLATFORMS = ["TikTok", "Instagram Reels", "YouTube Shorts", "All platforms"];
 const STAGES = ["Just starting", "1k–10k followers", "10k–100k followers", "100k+ followers"];
 const GOALS = ["Grow my following", "Drive sales / leads", "Build authority", "Monetize through brands"];
@@ -41,18 +41,18 @@ function ExampleScript() {
       <Card className="border-primary/30 bg-card/80 max-w-2xl mx-auto">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-bold text-primary uppercase tracking-wider">Niche Tip — 58s</span>
-            <span className="text-xs text-muted-foreground">Fitness · ready to film</span>
+            <span className="text-xs font-bold text-primary uppercase tracking-wider">Market Tip — 62s</span>
+            <span className="text-xs text-muted-foreground">Real Estate · ready to film</span>
           </div>
           <div className="mb-4">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Cold Open</p>
-            <p className="text-lg font-bold leading-snug">"Most people waste their first month at the gym doing the wrong three things. Here's exactly what to do instead."</p>
+            <p className="text-lg font-bold leading-snug">"If you want a 3-bed under $450k in Austin, stop scrolling listings until you hear this."</p>
           </div>
           <div className="space-y-3 mb-4">
             {[
-              { heading: "The Mistake Everyone Makes", body: "Spending 45 minutes on cardio before touching a weight. Your muscle-building window is the first 20 minutes — use it.", broll: "Side-by-side of treadmill vs squat rack" },
-              { heading: "The Fix (It Takes 10 Seconds)", body: "Start every session with 3 compound movements: squat, hinge, push. Everything else is bonus.", broll: "Overhead shot of someone writing a workout on whiteboard" },
-              { heading: "The Result After 30 Days", body: "Body recomp starts in week 2. Most people see visible change by day 28 when they follow this sequence.", broll: "Time-lapse style cuts, progress photos scroll" },
+              { heading: "The Timing Secret", body: "New listings go live between 6–8pm. Set your alerts for that window or you'll see them the next morning — already gone.", broll: "Phone screen showing listing notification pop up" },
+              { heading: "Pre-Approval First", body: "Sellers take pre-approved buyers seriously. Without a letter, your offer hits the bottom of the pile no matter what you bid.", broll: "Close-up of pre-approval letter on desk" },
+              { heading: "The Closing Date Edge", body: "Most buyers fight over price. Smart buyers offer sellers flexibility on the closing date — that alone wins deals in competitive markets.", broll: "Calendar being marked, agent shaking hands with clients" },
             ].map((s) => (
               <div key={s.heading} className="border border-border/50 rounded-lg p-3">
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">{s.heading}</p>
@@ -63,12 +63,12 @@ function ExampleScript() {
           </div>
           <div className="bg-background/60 rounded-lg p-3 mb-3">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Teleprompter text</p>
-            <p className="text-sm leading-relaxed text-muted-foreground">Most people waste their first month at the gym doing the wrong three things. Here's exactly what to do instead. Mistake one — spending 45 minutes on cardio before touching a weight...</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">If you want a 3-bed under $450k in Austin, stop scrolling listings until you hear this. New listings go live between 6 and 8pm — set your alerts for that window or you'll see them the next morning, already gone. Pre-approval first. Sellers take pre-approved buyers seriously...</p>
           </div>
           <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Caption</p>
-            <p className="text-sm">Stop wasting your first month at the gym. Do this instead →</p>
-            <p className="text-xs text-muted-foreground mt-1">#fitness #gym #gymtips #beginnerfitness #fitnesstips #gymmotivation #workout</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Caption + CTA</p>
+            <p className="text-sm">Buying in Austin? Stop searching alone. DM me 'SHOW' →</p>
+            <p className="text-xs text-muted-foreground mt-1">#austinrealestate #homebuying #firsttimehomebuyer #realtor #househunting #realestatetips #austinhomes</p>
           </div>
         </CardContent>
       </Card>
@@ -423,10 +423,11 @@ export default function Home() {
               </div>
               <h2 className="font-display text-xl font-bold mt-1">Pro Subscription</h2>
               <p className="text-sm text-muted-foreground mt-2 mb-4 flex-1">
-                Scripts, teleprompter camera, series management — everything. iOS + Android on launch.
+                Local market hooks, your CTA baked in, teleprompter camera, series management — everything to script, film, and post same-day.
               </p>
               <ul className="mb-5 space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> 5 scripts/day</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> 5 scripts/day, local hooks included</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> Your CTA injected automatically</li>
                 <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> Built-in teleprompter camera</li>
                 <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-green-500 shrink-0" /> Series + library management</li>
               </ul>
@@ -434,7 +435,7 @@ export default function Home() {
               {/* Monthly option */}
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-sm">Monthly</span>
-                <span className="font-extrabold">$7<span className="text-xs font-normal text-muted-foreground">/mo</span></span>
+                <span className="font-extrabold">$99<span className="text-xs font-normal text-muted-foreground">/mo</span></span>
               </div>
               <Button size="sm" variant="outline" className="w-full mb-4"
                 onClick={() => {
@@ -465,6 +466,37 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Browse Free Scripts — SEO link section, passes PageRank to programmatic pages */}
+        <section className="mb-12">
+          <div className="text-center mb-6">
+            <span className="text-xs font-bold text-primary uppercase tracking-widest">Free script libraries</span>
+            <h2 className="font-display text-2xl font-bold mt-2">Browse scripts by niche</h2>
+            <p className="text-sm text-muted-foreground mt-1">Free teleprompter-ready script examples for every niche — real estate, fitness, finance, and more.</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+            {[
+              { niche: "Real Estate", slug: "tiktok-scripts-for-real-estate" },
+              { niche: "Fitness", slug: "tiktok-scripts-for-fitness" },
+              { niche: "Finance", slug: "tiktok-scripts-for-finance" },
+              { niche: "Food", slug: "tiktok-scripts-for-food" },
+              { niche: "Beauty", slug: "tiktok-scripts-for-beauty" },
+              { niche: "Fashion", slug: "tiktok-scripts-for-fashion" },
+              { niche: "Tech", slug: "tiktok-scripts-for-tech" },
+              { niche: "Business", slug: "tiktok-scripts-for-business" },
+              { niche: "Travel", slug: "tiktok-scripts-for-travel" },
+              { niche: "Education", slug: "tiktok-scripts-for-education" },
+            ].map(({ niche, slug }) => (
+              <a
+                key={slug}
+                href={`/s/${slug}`}
+                className="rounded-lg border border-border/60 bg-card/70 px-3 py-3 text-center text-sm font-medium text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+              >
+                {niche}
+              </a>
+            ))}
+          </div>
+        </section>
 
         {/* How it works */}
         <section className="mb-12">

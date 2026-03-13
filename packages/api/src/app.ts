@@ -10,6 +10,7 @@ import checkoutRouter from './routes/checkout';
 import reportRouter from './routes/report';
 import calibrationRouter from './routes/calibration';
 import growthRouter from './growth/routes/growth';
+import seoRouter from './routes/seo';
 
 export function createApp() {
   const app = express();
@@ -47,6 +48,7 @@ export function createApp() {
   app.use('/api/report', reportRouter);
   app.use('/api/calibration', calibrationRouter);
   app.use('/api/growth', growthRouter);
+  app.use('/api/seo', seoRouter);
 
   // 404 fallthrough
   app.use((_req, res) => {

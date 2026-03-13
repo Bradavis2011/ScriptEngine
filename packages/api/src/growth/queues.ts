@@ -31,6 +31,7 @@ export const QUEUE_NAMES = {
   PAIN_POINT_SCRAPE: 'pain-point-scrape',
   GROWTH_LEARNING: 'growth-learning',
   DAILY_BRIEF: 'daily-brief',
+  SEO_CONTENT: 'seo-content',
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];

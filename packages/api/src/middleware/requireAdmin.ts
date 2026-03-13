@@ -3,6 +3,15 @@ import { requireAuth, AuthedRequest } from './requireAuth';
 import { prisma } from '../lib/prisma';
 
 export async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // Secret key bypass — set ADMIN_SECRET_KEY in Railway env vars
+  if (process.env.ADMIN_SECRET_KEY) {
+    const provided = req.headers['x-admin-key'];
+    if (provided === process.env.ADMIN_SECRET_KEY) {
+      next();
+      return;
+    }
+  }
+
   // Run requireAuth first — it will either call next or send 401
   await new Promise<void>((resolve) => {
     requireAuth(req, res, () => resolve());
