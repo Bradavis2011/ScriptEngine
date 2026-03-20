@@ -32,6 +32,10 @@ export const QUEUE_NAMES = {
   GROWTH_LEARNING: 'growth-learning',
   DAILY_BRIEF: 'daily-brief',
   SEO_CONTENT: 'seo-content',
+  PROMPT_EVOLUTION: 'prompt-evolution',
+  TOPIC_DISCOVERY: 'topic-discovery',
+  MARKET_DATA_SYNC: 'market-data-sync',
+  CREATOR_OUTREACH: 'creator-outreach',
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -65,4 +69,8 @@ export const SCHEDULES: Record<string, string> = {
   [QUEUE_NAMES.GROWTH_LEARNING]: '0 23 * * *',    // daily 11 PM UTC
   [QUEUE_NAMES.DAILY_BRIEF]: '0 7 * * *',         // daily 7 AM UTC
   [QUEUE_NAMES.SEO_CONTENT]: '0 3 * * *',         // daily 3 AM UTC — pick up queued pages
+  [QUEUE_NAMES.PROMPT_EVOLUTION]: '0 4 * * 0',    // weekly Sunday 4 AM UTC
+  [QUEUE_NAMES.TOPIC_DISCOVERY]: '0 */6 * * *',   // every 6 hours
+  [QUEUE_NAMES.MARKET_DATA_SYNC]: '0 5 * * *',    // daily 5 AM UTC
+  [QUEUE_NAMES.CREATOR_OUTREACH]: '0 10 * * 1,3,5', // Mon/Wed/Fri 10 AM UTC
 };

@@ -1,10 +1,12 @@
 import { Router, Response } from 'express';
 import multer from 'multer';
+import { Prisma } from '@prisma/client';
 import { AuthedRequest, requireAuth } from '../middleware/requireAuth';
 import { prisma } from '../lib/prisma';
 import { generateScript, generateScriptFromPhotos, GenerateScriptInput } from '../lib/gemini';
 import { getActivePrompt } from '../lib/promptVersions';
-import { computeEngagementScore, checkExperimentCompletion } from '../lib/calibration';
+import { computeEngagementScore, checkExperimentCompletion, ensureExperimentRunExists } from '../lib/calibration';
+import { computeScriptMetrics } from '../lib/scriptMetrics';
 
 const router = Router();
 
@@ -79,10 +81,11 @@ router.post('/generate', requireAuth, async (req, res: Response) => {
     }
   }
 
-  const { scriptType, seriesId, additionalContext } = req.body as {
+  const { scriptType, seriesId, additionalContext, suggestionId } = req.body as {
     scriptType?: ScriptType;
     seriesId?: string;
     additionalContext?: string;
+    suggestionId?: string;
   };
 
   const resolvedType: ScriptType =
@@ -105,12 +108,26 @@ router.post('/generate', requireAuth, async (req, res: Response) => {
   // Resolve prompt version (A/B: 80% current, 20% challenger)
   const { prompt: typePrompt, promptVersionId } = await getActivePrompt(resolvedType);
 
+  // If suggestionId provided, prepend its contextSnippet to additionalContext
+  let resolvedContext = additionalContext;
+  let resolvedSuggestionId: string | null = null;
+  if (suggestionId) {
+    const suggestion = await prisma.topicSuggestion.findUnique({
+      where: { id: suggestionId },
+    });
+    if (suggestion) {
+      resolvedSuggestionId = suggestion.id;
+      resolvedContext = suggestion.contextSnippet
+        + (additionalContext ? `\n\n${additionalContext}` : '');
+    }
+  }
+
   const input: GenerateScriptInput = {
     niche: tenant.niche,
     scriptType: resolvedType,
     seriesName,
     episodeNumber,
-    additionalContext,
+    additionalContext: resolvedContext,
     city: tenant.city ?? undefined,
     callToAction: tenant.callToAction ?? undefined,
   };
@@ -125,6 +142,13 @@ router.post('/generate', requireAuth, async (req, res: Response) => {
     return;
   }
 
+  // Compute objective quality metrics
+  const metrics = computeScriptMetrics(
+    scriptData.teleprompterText,
+    scriptData.coldOpen,
+    scriptData.totalDurationSeconds,
+  );
+
   const script = await prisma.script.create({
     data: {
       tenantId: tenant.id,
@@ -132,8 +156,18 @@ router.post('/generate', requireAuth, async (req, res: Response) => {
       scriptData: scriptData as any,
       seriesId: seriesId ?? null,
       promptVersionId,
+      suggestionId: resolvedSuggestionId,
+      metrics: metrics as any,
     },
   });
+
+  // Track suggestion usage
+  if (resolvedSuggestionId) {
+    await prisma.topicSuggestion.update({
+      where: { id: resolvedSuggestionId },
+      data: { timesUsed: { increment: 1 } },
+    }).catch(() => {}); // non-fatal
+  }
 
   // If part of a series, increment episodeCount
   if (seriesId) {
@@ -362,9 +396,53 @@ router.post('/:id/performance', requireAuth, async (req, res: Response) => {
     checkExperimentCompletion(script.scriptType).catch((err) =>
       console.error('[scripts/performance] calibration check failed:', err),
     );
+    // Safety: auto-create ExperimentRun if challenger exists without one
+    // (handles challengers created before this change or if createChallenger failed)
+    ensureExperimentRunExists(script.scriptType).catch((err) =>
+      console.error('[scripts/performance] ensureExperimentRunExists failed:', err),
+    );
+  }
+
+  // Update avgPerformance on the suggestion if this script came from one
+  if (script.suggestionId) {
+    updateSuggestionPerformance(script.suggestionId, performance.engagementScore).catch(() => {});
   }
 
   res.json(updated);
 });
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+async function updateSuggestionPerformance(
+  suggestionId: string,
+  engagementScore: number,
+): Promise<void> {
+  const suggestion = await prisma.topicSuggestion.findUnique({
+    where: { id: suggestionId },
+    include: { _count: { select: { scripts: true } } },
+  });
+  if (!suggestion) return;
+
+  // Compute running average of engagement scores across scripts from this suggestion
+  const scripts = await prisma.script.findMany({
+    where: { suggestionId, performance: { not: Prisma.JsonNull } },
+    select: { performance: true },
+  });
+
+  if (scripts.length === 0) return;
+
+  const avg =
+    scripts.reduce((sum, s) => {
+      const perf = s.performance as { engagementScore?: number } | null;
+      return sum + (perf?.engagementScore ?? 0);
+    }, 0) / scripts.length;
+
+  await prisma.topicSuggestion.update({
+    where: { id: suggestionId },
+    data: { avgPerformance: avg },
+  });
+}
 
 export default router;

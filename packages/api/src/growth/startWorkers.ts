@@ -6,7 +6,12 @@ import { runPainPointScrape } from './workers/painPointScrape';
 import { runGrowthLearning } from './workers/growthLearning';
 import { runDailyBrief } from './workers/dailyBrief';
 import { runSeoContent } from './workers/seoContent';
+import { runPromptEvolution } from './workers/promptEvolution';
+import { runTopicDiscovery } from './workers/topicDiscovery';
+import { runMarketDataSync } from './workers/marketDataSync';
+import { runCreatorOutreach } from './workers/creatorOutreach';
 import { seedGrowthTemplates } from './services/growthTemplates';
+import { seedPromptVersions } from '../lib/promptVersions';
 
 type WorkerHandler = (job: Job) => Promise<void>;
 
@@ -17,6 +22,10 @@ const WORKER_HANDLERS: Record<string, WorkerHandler> = {
   [QUEUE_NAMES.GROWTH_LEARNING]: runGrowthLearning,
   [QUEUE_NAMES.DAILY_BRIEF]: runDailyBrief,
   [QUEUE_NAMES.SEO_CONTENT]: runSeoContent,
+  [QUEUE_NAMES.PROMPT_EVOLUTION]: runPromptEvolution,
+  [QUEUE_NAMES.TOPIC_DISCOVERY]: runTopicDiscovery,
+  [QUEUE_NAMES.MARKET_DATA_SYNC]: runMarketDataSync,
+  [QUEUE_NAMES.CREATOR_OUTREACH]: runCreatorOutreach,
 };
 
 const workers: Worker[] = [];
@@ -63,9 +72,12 @@ export async function startGrowthWorkers(): Promise<void> {
     workers.push(worker);
   }
 
-  // Seed default templates on first boot (idempotent — skips if already seeded)
+  // Seed default templates and prompt versions on first boot (idempotent)
   const seeded = await seedGrowthTemplates();
   if (seeded > 0) console.log(`[growth] Seeded ${seeded} default growth templates`);
+
+  const promptsSeeded = await seedPromptVersions();
+  if (promptsSeeded > 0) console.log(`[growth] Seeded ${promptsSeeded} prompt versions (all 12 script types)`);
 
   console.log(`[growth] Workers started: ${Object.keys(WORKER_HANDLERS).join(', ')}`);
 }

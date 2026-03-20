@@ -24,25 +24,29 @@ model Tenant {
 }
 
 model Script {
-  id              String         @id @default(cuid())
+  id              String           @id @default(cuid())
   tenantId        String
-  tenant          Tenant         @relation(fields: [tenantId], references: [id])
-  scriptType      String         // series_episode | data_drop | trend_take | niche_tip
-  scriptData      Json           // coldOpen, sections, callToAction, teleprompterText, caption, hashtags, totalDuration
-  filmingStatus   String         @default("ready") // ready | filmed | posted
-  public          Boolean        @default(false)   // opt-in: visible in public script library
+  tenant          Tenant           @relation(fields: [tenantId], references: [id])
+  scriptType      String           // series_episode | data_drop | trend_take | niche_tip
+  scriptData      Json             // coldOpen, sections, callToAction, teleprompterText, caption, hashtags, totalDuration
+  filmingStatus   String           @default("ready") // ready | filmed | posted
+  public          Boolean          @default(false)   // opt-in: visible in public script library
   seriesId        String?
-  series          Series?        @relation(fields: [seriesId], references: [id])
+  series          Series?          @relation(fields: [seriesId], references: [id])
   promptVersionId String?
-  promptVersion   PromptVersion? @relation(fields: [promptVersionId], references: [id])
-  performance     Json?          // { views, likes, shares, follows, engagementScore }
-  aiQualityScore  Float?         // from AI evaluator (1-10)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  promptVersion   PromptVersion?   @relation(fields: [promptVersionId], references: [id])
+  suggestionId    String?
+  suggestion      TopicSuggestion? @relation(fields: [suggestionId], references: [id])
+  performance     Json?            // { views, likes, shares, follows, engagementScore }
+  aiQualityScore  Float?           // from AI evaluator (1-10)
+  metrics         Json?            // { readabilityGrade, estimatedDurationSeconds, hookType, hookWordCount, durationAccurate }
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@index([tenantId, filmingStatus])
   @@index([tenantId, createdAt])
   @@index([promptVersionId])
+  @@index([suggestionId])
 }
 
 model Series {
@@ -210,6 +214,59 @@ model SeoPage {
 
   @@index([status])
   @@index([pageType, niche])
+}
+
+model TopicSuggestion {
+  id              String    @id @default(cuid())
+  niche           String
+  topic           String
+  source          String    // "google_trends" | "reddit" | "youtube" | "newsapi"
+  sourceUrl       String?
+  scriptType      String    // recommended script type
+  contextSnippet  String    // real data/quote to inject into additionalContext
+  relevanceScore  Float
+  timesUsed       Int       @default(0)
+  avgPerformance  Float?    // avg engagement score of scripts generated from this suggestion
+  expiresAt       DateTime
+  createdAt       DateTime  @default(now())
+  scripts         Script[]
+
+  @@index([niche, expiresAt])
+  @@index([source])
+}
+
+model MarketDataCache {
+  id        String   @id @default(cuid())
+  seriesId  String   @unique  // FRED series ID, e.g. MORTGAGE30US
+  value     Float
+  prevValue Float?
+  date      String   // FRED observation date string, e.g. "2026-03-13"
+  unit      String?  // e.g. "Percent" or "Thousands of Units"
+  updatedAt DateTime @updatedAt
+}
+
+model UnsubscribeList {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model Lead {
+  id        String    @id @default(cuid())
+  email     String
+  firstName String?
+  lastName  String?
+  company   String?
+  source    String    // "vibe" | "manual" | other importer name
+  sourceId  String    // id in the source system
+  status    String    @default("new") // new | contacted | responded | converted | unsubscribed
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([source, sourceId])
+  @@index([status])
+  @@index([email])
 }
 
 model ConciergeOrder {

@@ -123,6 +123,45 @@ function avgScoreFromScripts(
 }
 
 /**
+ * Safety net: if a challenger exists for this script type but no running ExperimentRun,
+ * auto-create one. Handles challengers created before the auto-ExperimentRun change.
+ */
+export async function ensureExperimentRunExists(scriptType: string): Promise<void> {
+  const runningExperiment = await prisma.experimentRun.findFirst({
+    where: { scriptType, status: 'running' },
+  });
+
+  // Already has a running experiment — nothing to do
+  if (runningExperiment) return;
+
+  const challenger = await prisma.promptVersion.findFirst({
+    where: { scriptType, status: 'challenger' },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (!challenger) return;
+
+  const current = await prisma.promptVersion.findFirst({
+    where: { scriptType, status: 'current' },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (!current) return;
+
+  await prisma.experimentRun.create({
+    data: {
+      scriptType,
+      currentId: current.id,
+      challengerId: challenger.id,
+      evaluationType: 'dual',
+      status: 'running',
+    },
+  });
+
+  console.log(`[calibration] Auto-created ExperimentRun for ${scriptType} (challenger found without run)`);
+}
+
+/**
  * Get a calibration snapshot: current experiments, prompt versions, and aggregate stats.
  */
 export async function getCalibrationSnapshot() {

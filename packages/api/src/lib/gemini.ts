@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { buildMarketContext, DATA_HEAVY_SCRIPT_TYPES } from './marketContext';
 
 let _genAI: GoogleGenerativeAI | null = null;
 function getGenAI(): GoogleGenerativeAI {
@@ -278,6 +279,21 @@ export async function generateScript(
     ? `Creator's CTA: Use exactly "${input.callToAction}" as the callToAction field text. Write the callToActionCamera direction to match.`
     : '';
 
+  // Inject verified real-time market data for data-heavy script types
+  let marketContext = '';
+  if (DATA_HEAVY_SCRIPT_TYPES.has(input.scriptType as string)) {
+    try {
+      marketContext = await buildMarketContext(input.niche, input.city);
+    } catch (err) {
+      // Non-fatal — proceed without market context
+      console.warn('[gemini] buildMarketContext failed:', err instanceof Error ? err.message : err);
+    }
+  }
+
+  const additionalContextBlock = [marketContext, input.additionalContext]
+    .filter(Boolean)
+    .join('\n\n');
+
   const prompt = `
 You are an expert short-form video script writer for ${input.niche} content creators on TikTok, Instagram Reels, and YouTube Shorts.
 
@@ -285,7 +301,7 @@ ${typePrompt}
 
 Niche: ${input.niche}
 ${seriesContext}
-${input.additionalContext ?? ''}
+${additionalContextBlock}
 ${locationContext}
 ${ctaContext}
 

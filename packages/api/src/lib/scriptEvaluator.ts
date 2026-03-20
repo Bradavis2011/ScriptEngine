@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { ScriptData } from './gemini';
+import { computeReadability, estimateDuration } from './scriptMetrics';
 
 let _genAI: GoogleGenerativeAI | null = null;
 function getGenAI(): GoogleGenerativeAI {
@@ -93,7 +94,27 @@ TELEPROMPTER TEXT: "${script.teleprompterText}"`.trim();
     `${EVALUATOR_PROMPT}\n\nSCRIPT TO EVALUATE:\n${scriptSummary}`,
   );
 
-  return JSON.parse(result.response.text()) as ScriptQualityScore;
+  const aiScore = JSON.parse(result.response.text()) as ScriptQualityScore;
+
+  // Apply objective corrections — prevents Gemini from inflating its own scores
+  const readabilityGrade = computeReadability(script.teleprompterText);
+  const estimatedSecs = estimateDuration(script.teleprompterText);
+  const claimedSecs = script.totalDurationSeconds;
+  const durationDelta = claimedSecs > 0
+    ? Math.abs(estimatedSecs - claimedSecs) / claimedSecs
+    : 0;
+
+  // Cap naturalLanguage if readability is too high (> 10 = too complex for spoken delivery)
+  if (readabilityGrade > 10) {
+    aiScore.naturalLanguage = Math.min(aiScore.naturalLanguage, 6);
+  }
+
+  // Penalize pacing if duration estimate deviates > 15% from Gemini's claim
+  if (durationDelta > 0.15) {
+    aiScore.pacing = Math.max(aiScore.pacing - 1, 1);
+  }
+
+  return aiScore;
 }
 
 export function computeOverallScore(score: ScriptQualityScore): number {

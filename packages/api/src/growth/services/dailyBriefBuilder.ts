@@ -5,7 +5,7 @@ export async function buildDailyBriefHtml(): Promise<string> {
   const dashboard = await getGrowthDashboard();
   const yesterday = new Date(Date.now() - 24 * 3600 * 1000);
 
-  const [topPainPoints, topCreators] = await Promise.all([
+  const [topPainPoints, topCreators, outreachStats, topSuggestions] = await Promise.all([
     prisma.painPoint.findMany({
       where: { discoveredAt: { gte: yesterday } },
       orderBy: { overallScore: 'desc' },
@@ -15,6 +15,16 @@ export async function buildDailyBriefHtml(): Promise<string> {
       where: { status: 'briefed', discoveredAt: { gte: yesterday } },
       orderBy: { relevanceScore: 'desc' },
       take: 5,
+    }),
+    prisma.creatorProspect.groupBy({
+      by: ['status'],
+      _count: { id: true },
+      where: { status: { in: ['contacted', 'responded', 'converted'] } },
+    }),
+    prisma.topicSuggestion.findMany({
+      where: { expiresAt: { gt: new Date() }, avgPerformance: { not: null } },
+      orderBy: { avgPerformance: 'desc' },
+      take: 3,
     }),
   ]);
 
@@ -63,6 +73,35 @@ export async function buildDailyBriefHtml(): Promise<string> {
       ? `<div class="card">
       <div class="label">Top Pain Categories (All Time)</div>
       ${dashboard.painPoints.topCategories.map((cat) => `<span class="pill">${cat}</span>`).join('')}
+    </div>`
+      : '';
+
+  const contactedCount = outreachStats.find((s) => s.status === 'contacted')?._count.id ?? 0;
+  const respondedCount = outreachStats.find((s) => s.status === 'responded')?._count.id ?? 0;
+  const convertedCount = outreachStats.find((s) => s.status === 'converted')?._count.id ?? 0;
+
+  const outreachSection = `<div class="card">
+    <div class="label">Outreach Pipeline</div>
+    <div class="stat-grid">
+      <div><div class="stat">${contactedCount}</div><p>Emailed</p></div>
+      <div><div class="stat">${respondedCount}</div><p>Responded</p></div>
+      <div><div class="stat">${convertedCount}</div><p>Converted</p></div>
+    </div>
+  </div>`;
+
+  const topSuggestionsSection =
+    topSuggestions.length > 0
+      ? `<div class="card">
+      <div class="label">Top Performing Topic Sources</div>
+      ${topSuggestions
+        .map(
+          (s) => `
+        <div style="margin-bottom:12px;">
+          <p style="color:#e5e5e7;font-weight:600;margin:0 0 2px;">${s.topic.slice(0, 60)}</p>
+          <p style="margin:0;">Source: ${s.source} | Avg Engagement: <strong style="color:#00E5FF;">${s.avgPerformance?.toFixed(1)}</strong> | Used: ${s.timesUsed}x</p>
+        </div>`,
+        )
+        .join('')}
     </div>`
       : '';
 
@@ -132,10 +171,12 @@ export async function buildDailyBriefHtml(): Promise<string> {
       </div>
     </div>
 
+    ${outreachSection}
     ${seoSection}
     ${painPointsSection}
     ${creatorsSection}
     ${topCategoriesSection}
+    ${topSuggestionsSection}
   </div>
 </body>
 </html>`;

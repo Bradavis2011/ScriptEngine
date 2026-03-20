@@ -11,6 +11,8 @@ import reportRouter from './routes/report';
 import calibrationRouter from './routes/calibration';
 import growthRouter from './growth/routes/growth';
 import seoRouter from './routes/seo';
+import suggestionsRouter from './routes/suggestions';
+import unsubscribeRouter from './routes/unsubscribe';
 
 export function createApp() {
   const app = express();
@@ -40,8 +42,9 @@ export function createApp() {
     res.json({ status: 'ok', ts: new Date().toISOString() });
   });
 
-  // API routes
+  // API routes — mount /api/scripts/suggestions BEFORE /api/scripts to avoid /:id collision
   app.use('/api/tenants', tenantRouter);
+  app.use('/api/scripts/suggestions', suggestionsRouter);
   app.use('/api/scripts', scriptRouter);
   app.use('/api/series', seriesRouter);
   app.use('/api/checkout', checkoutRouter);
@@ -49,6 +52,7 @@ export function createApp() {
   app.use('/api/calibration', calibrationRouter);
   app.use('/api/growth', growthRouter);
   app.use('/api/seo', seoRouter);
+  app.use('/api/unsubscribe', unsubscribeRouter);
 
   // 404 fallthrough
   app.use((_req, res) => {
