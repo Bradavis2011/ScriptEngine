@@ -83,6 +83,8 @@ export interface ApiTenant {
   clerkUserId: string;
   email: string;
   niche: string;
+  city?: string | null;
+  callToAction?: string | null;
   tier: 'free' | 'pro' | 'founders' | 'team';
   scriptsPerDay: number;
   scriptsToday: number;
@@ -91,10 +93,17 @@ export interface ApiTenant {
 }
 
 // ---------- Tenants ----------
-export const createTenant = (data: { email: string; niche: string }, token: string) =>
-  request<ApiTenant>('/api/tenants', { method: 'POST', body: JSON.stringify(data), token });
+export const createTenant = (
+  data: { email: string; niche: string; city?: string; callToAction?: string },
+  token: string
+) => request<ApiTenant>('/api/tenants', { method: 'POST', body: JSON.stringify(data), token });
 
 export const getMe = (token: string) => request<ApiTenant>('/api/tenants/me', { token });
+
+export const updateProfile = (
+  data: { niche?: string; city?: string; callToAction?: string },
+  token: string
+) => request<ApiTenant>('/api/tenants/me', { method: 'PATCH', body: JSON.stringify(data), token });
 
 // ---------- Scripts ----------
 export const getScripts = (status: string, token: string) =>
@@ -113,6 +122,48 @@ export const generateScript = (
   data: { scriptType?: string; seriesId?: string; additionalContext?: string },
   token: string
 ) => request<ApiScript>('/api/scripts/generate', { method: 'POST', body: JSON.stringify(data), token });
+
+export async function generateScriptFromPhotos(
+  photos: Array<{ uri: string; mimeType?: string }>,
+  scriptType: string,
+  additionalContext: string | undefined,
+  token: string
+): Promise<ApiScript> {
+  const formData = new FormData();
+  photos.forEach((photo, idx) => {
+    formData.append('photos', {
+      uri: photo.uri,
+      name: `photo_${idx}.jpg`,
+      type: photo.mimeType ?? 'image/jpeg',
+    } as any);
+  });
+  formData.append('scriptType', scriptType);
+  if (additionalContext) formData.append('additionalContext', additionalContext);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 120_000);
+
+  try {
+    const res = await fetch(`${API_URL}/api/scripts/generate-from-photos`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(body?.error ?? `Request failed: ${res.status}`);
+    }
+    return res.json() as Promise<ApiScript>;
+  } catch (e: any) {
+    if (e.name === 'AbortError') {
+      throw new Error('Request timed out — the server is taking too long. Try again.');
+    }
+    throw e;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 export const updateScriptStatus = (
   id: string,

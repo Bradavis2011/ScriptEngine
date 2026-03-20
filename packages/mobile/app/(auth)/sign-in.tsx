@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert, Image,
+  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSignIn, useSignUp } from '@clerk/clerk-expo';
@@ -12,7 +12,7 @@ import { GlowOrbs } from '@/components/GlowOrbs';
 const TEAL = '#03EDD6';
 const RED  = '#FD1741';
 
-type Mode = 'sign-in' | 'sign-up' | 'verify';
+type Mode = 'sign-in' | 'sign-up' | 'verify' | 'forgot' | 'reset';
 
 export default function SignIn() {
   const { signIn, setActive: setSignInActive, isLoaded: signInLoaded } = useSignIn();
@@ -21,6 +21,7 @@ export default function SignIn() {
   const [mode, setMode] = useState<Mode>('sign-in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -113,15 +114,67 @@ export default function SignIn() {
     }
   };
 
+  const handleForgot = async () => {
+    if (!signInLoaded) return;
+    setLoading(true);
+    try {
+      await signIn!.create({ strategy: 'reset_password_email_code', identifier: email.trim() });
+      setCode('');
+      setNewPassword('');
+      setMode('reset');
+    } catch (e: any) {
+      Alert.alert('Error', e?.errors?.[0]?.message ?? e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (!signInLoaded) return;
+    setLoading(true);
+    try {
+      const result = await signIn!.attemptFirstFactor({
+        strategy: 'reset_password_email_code',
+        code: code.trim(),
+        password: newPassword,
+      });
+      if (result.status === 'complete') {
+        await setSignInActive!({ session: result.createdSessionId });
+      }
+    } catch (e: any) {
+      Alert.alert('Reset failed', e?.errors?.[0]?.message ?? e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const subtitleMap: Record<Mode, string> = {
+    'sign-in': 'Welcome back. Your scripts are waiting.',
+    'sign-up': 'Create your account to start scripting.',
+    'verify': `Enter the code we sent to ${email}`,
+    'forgot': 'Enter your email and we\'ll send a reset code.',
+    'reset': `Enter the code we sent to ${email} and your new password.`,
+  };
+
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <GlowOrbs />
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" bounces={false}>
-        {/* Logo row — icon.png + logo.png, same as landing page nav */}
+        {/* Logo row — JSX mark + wordmark text */}
         <View style={styles.logoRow}>
-          <Image source={require('../../assets/icon.png')} style={styles.icon} resizeMode="contain" />
-          <Image source={require('../../assets/logo.png')} style={styles.logoImg} resizeMode="contain" />
+          <View style={styles.logoMark}>
+            <Text style={styles.logoPlay}>▶</Text>
+            <View style={styles.logoLines}>
+              {[1, 0.7, 0.5].map((o, i) => (
+                <View key={i} style={[styles.logoLine, { opacity: o }]} />
+              ))}
+            </View>
+          </View>
+          <Text style={styles.logoText}>
+            <Text style={{ color: TEAL }}>Clip</Text>
+            <Text style={{ color: colors.white }}>Script</Text>
+          </Text>
         </View>
 
         {/* Kicker pill */}
@@ -130,7 +183,7 @@ export default function SignIn() {
           <Text style={styles.kickerText}>AI-POWERED SCRIPTS</Text>
         </View>
 
-        {/* Hero — "Film it." uses teal+red split to simulate gradient without MaskedView */}
+        {/* Hero */}
         <Text style={styles.heroPre}>Write it.</Text>
         <View style={styles.heroFilmRow}>
           <Text style={[styles.heroFilm, { color: TEAL }]}>Fi</Text>
@@ -140,15 +193,9 @@ export default function SignIn() {
         </View>
         <Text style={styles.heroPre}>Post it.</Text>
 
-        <Text style={styles.subtitle}>
-          {mode === 'verify'
-            ? `Enter the code we sent to ${email}`
-            : mode === 'sign-in'
-            ? 'Welcome back. Your scripts are waiting.'
-            : 'Create your account to start scripting.'}
-        </Text>
+        <Text style={styles.subtitle}>{subtitleMap[mode]}</Text>
 
-        {/* Divider with gradient line */}
+        {/* Divider */}
         <LinearGradient
           colors={[TEAL, RED]}
           start={{ x: 0, y: 0 }}
@@ -156,7 +203,8 @@ export default function SignIn() {
           style={styles.divider}
         />
 
-        {mode !== 'verify' ? (
+        {/* ── Sign-in / Sign-up ── */}
+        {(mode === 'sign-in' || mode === 'sign-up') && (
           <>
             <TextInput
               style={styles.input}
@@ -177,6 +225,16 @@ export default function SignIn() {
               secureTextEntry
               autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
             />
+
+            {mode === 'sign-in' && (
+              <TouchableOpacity
+                style={styles.forgotBtn}
+                onPress={() => { setCode(''); setNewPassword(''); setMode('forgot'); }}
+              >
+                <Text style={styles.forgotText}>Forgot password?</Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
               onPress={mode === 'sign-in' ? handleSignIn : handleSignUp}
               disabled={loading}
@@ -221,7 +279,10 @@ export default function SignIn() {
               </>
             )}
           </>
-        ) : (
+        )}
+
+        {/* ── Verify email (sign-up) ── */}
+        {mode === 'verify' && (
           <>
             <TextInput
               style={styles.input}
@@ -250,6 +311,78 @@ export default function SignIn() {
             </TouchableOpacity>
           </>
         )}
+
+        {/* ── Forgot password — enter email ── */}
+        {mode === 'forgot' && (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="Email address"
+              placeholderTextColor={colors.muted}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+            />
+            <TouchableOpacity onPress={handleForgot} disabled={loading} style={styles.btnWrapper}>
+              <LinearGradient
+                colors={[TEAL, RED]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.btn}
+              >
+                {loading
+                  ? <ActivityIndicator color="#0B0B0D" />
+                  : <Text style={styles.btnText}>Send Reset Code</Text>
+                }
+              </LinearGradient>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.switchBtn} onPress={() => setMode('sign-in')}>
+              <Text style={styles.switchText}>Back to sign in</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* ── Reset password — enter code + new password ── */}
+        {mode === 'reset' && (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="6-digit reset code"
+              placeholderTextColor={colors.muted}
+              value={code}
+              onChangeText={setCode}
+              keyboardType="number-pad"
+              maxLength={6}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="New password"
+              placeholderTextColor={colors.muted}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry
+              autoComplete="new-password"
+            />
+            <TouchableOpacity onPress={handleReset} disabled={loading} style={styles.btnWrapper}>
+              <LinearGradient
+                colors={[TEAL, RED]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.btn}
+              >
+                {loading
+                  ? <ActivityIndicator color="#0B0B0D" />
+                  : <Text style={styles.btnText}>Set New Password</Text>
+                }
+              </LinearGradient>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.switchBtn} onPress={() => setMode('forgot')}>
+              <Text style={styles.switchText}>Resend code</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -259,8 +392,15 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg, alignItems: 'center' },
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: spacing.xl },
-  icon: { width: 36, height: 36, borderRadius: radius.md },
-  logoImg: { height: 26, width: 130 },
+  logoMark: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: TEAL + '18', borderRadius: 14, padding: 10,
+    borderWidth: 1, borderColor: TEAL + '44',
+  },
+  logoPlay: { fontSize: 16, color: TEAL },
+  logoLines: { gap: 4 },
+  logoLine: { height: 2, width: 18, backgroundColor: TEAL, borderRadius: 2 },
+  logoText: { fontSize: 22, fontWeight: '800' },
   kickerPill: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     borderWidth: 1, borderColor: TEAL + '66',
@@ -283,6 +423,8 @@ const styles = StyleSheet.create({
     fontSize: 15, color: colors.white,
     marginBottom: spacing.md,
   },
+  forgotBtn: { alignSelf: 'flex-end', marginBottom: spacing.sm, marginTop: -spacing.sm },
+  forgotText: { fontSize: 13, color: colors.muted },
   btnWrapper: { alignSelf: 'stretch', marginTop: spacing.sm, borderRadius: radius.md, overflow: 'hidden' },
   btn: { borderRadius: radius.md, paddingVertical: 16, alignItems: 'center' },
   btnText: { fontSize: 16, fontWeight: '800', color: '#0B0B0D' },

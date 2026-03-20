@@ -50,6 +50,8 @@ export default function TeleprompterScreen() {
   const [pendingUri, setPendingUri] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [savedToLibrary, setSavedToLibrary] = useState(false);
+  const [userScrollEnabled, setUserScrollEnabled] = useState(false);
+  const touchPausedRef = useRef(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dotOpacity = useRef(new Animated.Value(1)).current;
@@ -82,6 +84,7 @@ export default function TeleprompterScreen() {
   const startScroll = useCallback(() => {
     if (scrollInterval.current) clearInterval(scrollInterval.current);
     scrollInterval.current = setInterval(() => {
+      if (touchPausedRef.current) return;
       scrollY.current += speed * 0.8;
       scrollRef.current?.scrollTo({ y: scrollY.current, animated: false });
     }, 16);
@@ -294,7 +297,7 @@ export default function TeleprompterScreen() {
             <Ionicons name="videocam-outline" size={16} color={colors.white} />
             <Text style={styles.retakeBtnText}>Film Again</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.keepBtn} onPress={() => router.replace('/(app)/camera')}>
+          <TouchableOpacity style={styles.keepBtn} onPress={() => router.replace('/(app)')}>
             <Text style={styles.keepBtnText}>Done</Text>
           </TouchableOpacity>
         </View>
@@ -351,12 +354,17 @@ export default function TeleprompterScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Teleprompter text */}
+      {/* Teleprompter text — touch pauses auto-scroll so user can read ahead */}
       <ScrollView
         ref={scrollRef}
         style={[styles.teleScroll, { bottom: controlsHeight }]}
-        scrollEnabled={false}
+        scrollEnabled={userScrollEnabled}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={(e) => { scrollY.current = e.nativeEvent.contentOffset.y; }}
+        onTouchStart={() => { touchPausedRef.current = true; setUserScrollEnabled(true); }}
+        onTouchEnd={() => { touchPausedRef.current = false; setUserScrollEnabled(false); }}
+        onTouchCancel={() => { touchPausedRef.current = false; setUserScrollEnabled(false); }}
         contentContainerStyle={styles.teleContent}
       >
         <Text style={styles.teleText}>{teleprompterText}</Text>

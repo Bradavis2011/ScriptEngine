@@ -4,12 +4,18 @@
     "slug": "clipscript",
     "version": "1.0.0",
     "orientation": "portrait",
+    "updates": {
+      "url": "https://u.expo.dev/03b4766a-ac26-4243-9608-d103e0860e08"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "scheme": "clipscript",
     "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
     "splash": {
       "image": "./assets/splash.png",
-      "resizeMode": "contain",
+      "resizeMode": "cover",
       "backgroundColor": "#0B0B0D"
     },
     "ios": {
@@ -72,6 +78,6 @@
         "projectId": "03b4766a-ac26-4243-9608-d103e0860e08"
       }
     },
-    "owner": "outfitcheck"
+    "owner": "outfitcheckk"
   }
 }

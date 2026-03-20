@@ -64,4 +64,5 @@ export const SCHEDULES: Record<string, string> = {
   [QUEUE_NAMES.PAIN_POINT_SCRAPE]: '0 */6 * * *', // every 6 hours
   [QUEUE_NAMES.GROWTH_LEARNING]: '0 23 * * *',    // daily 11 PM UTC
   [QUEUE_NAMES.DAILY_BRIEF]: '0 7 * * *',         // daily 7 AM UTC
+  [QUEUE_NAMES.SEO_CONTENT]: '0 3 * * *',         // daily 3 AM UTC — pick up queued pages
 };

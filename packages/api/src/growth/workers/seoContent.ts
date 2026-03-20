@@ -159,7 +159,7 @@ export async function runSeoContent(job: Job): Promise<void> {
       console.error(`[seo-content] Failed: ${slug}`, err);
     }
 
-    await sleep(2000);
+    await sleep(6000);
   }
 
   // ── Process pain-point / GSC-opportunity pages with status 'queued' ──
@@ -199,7 +199,7 @@ export async function runSeoContent(job: Job): Promise<void> {
       console.error(`[seo-content] Failed queued page: ${qp.slug}`, err);
     }
 
-    await sleep(2000);
+    await sleep(6000);
   }
 
   const totalPublishedNow = await prisma.seoPage.count({ where: { status: 'published' } });

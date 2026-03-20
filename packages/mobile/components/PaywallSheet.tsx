@@ -56,7 +56,7 @@ export function PaywallSheet({ visible, onClose, onUpgraded }: Props) {
             pkg,
             id,
             title: isAnnual ? 'Founders Annual' : 'Pro Monthly',
-            price: pkg.product?.priceString ?? (isAnnual ? '$60/yr' : '$7/mo'),
+            price: pkg.product?.priceString ?? (isAnnual ? '$60/yr' : '$99/mo'),
             period: isAnnual ? 'per year' : 'per month',
             badge: isAnnual ? 'Best Value' : undefined,
           };
@@ -68,14 +68,14 @@ export function PaywallSheet({ visible, onClose, onUpgraded }: Props) {
       } else {
         // Fallback display when running in Expo Go or offerings not configured yet
         setOfferings([
-          { pkg: null, id: 'pro_monthly',      title: 'Pro Monthly',     price: '$7/mo',  period: 'per month' },
+          { pkg: null, id: 'pro_monthly',      title: 'Pro Monthly',     price: '$99/mo', period: 'per month' },
           { pkg: null, id: 'founders_annual',   title: 'Founders Annual', price: '$60/yr', period: 'per year', badge: 'Best Value' },
         ]);
         setSelected('founders_annual');
       }
     } catch {
       setOfferings([
-        { pkg: null, id: 'pro_monthly',    title: 'Pro Monthly',     price: '$7/mo',  period: 'per month' },
+        { pkg: null, id: 'pro_monthly',    title: 'Pro Monthly',     price: '$99/mo', period: 'per month' },
         { pkg: null, id: 'founders_annual', title: 'Founders Annual', price: '$60/yr', period: 'per year', badge: 'Best Value' },
       ]);
       setSelected('founders_annual');

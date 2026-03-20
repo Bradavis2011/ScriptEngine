@@ -82,7 +82,7 @@ export default function SeriesScreen() {
       <Modal visible={modalVisible} transparent animationType="slide">
         <KeyboardAvoidingView
           style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => !saving && setModalVisible(false)} />
           <View style={styles.sheet}>

@@ -209,6 +209,47 @@ export async function sendFailureAlert({
 }
 
 // ---------------------------------------------------------------------------
+// Customer failure notice — sent when generation fails so customer knows we're aware
+// ---------------------------------------------------------------------------
+export async function sendCustomerFailureNotice({
+  toEmail,
+  orderType,
+}: {
+  toEmail: string;
+  orderType: string;
+}) {
+  if (!toEmail) return;
+  const productName = orderType === 'pack' ? 'Script Pack' : 'Concierge Brief';
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to: toEmail,
+      subject: `We received your ${productName} order — update inside`,
+      html: `
+      <div style="font-family:sans-serif;max-width:640px;margin:0 auto;color:#111;">
+        <h1 style="font-size:22px;margin-bottom:8px;">We're on it</h1>
+        <p style="color:#555;font-size:15px;margin-bottom:16px;">
+          We received your ${productName} order and your payment went through successfully.
+          We hit a snag generating your scripts — our team has been alerted automatically and
+          will have your delivery ready shortly.
+        </p>
+        <p style="color:#555;font-size:15px;margin-bottom:16px;">
+          You don't need to do anything. If you don't hear from us within an hour,
+          reply to this email and we'll sort it out immediately — or issue a full refund,
+          your choice.
+        </p>
+        <hr style="margin:28px 0;border:none;border-top:1px solid #e5e7eb;" />
+        <p style="color:#888;font-size:12px;">
+          ClipScript — <a href="mailto:hello@clipscriptai.com">hello@clipscriptai.com</a>
+        </p>
+      </div>`,
+    });
+  } catch (noticeErr) {
+    console.error('Failed to send customer failure notice:', noticeErr);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Feedback request — sent 7 days after pack delivery
 // ---------------------------------------------------------------------------
 export async function sendFeedbackRequest({

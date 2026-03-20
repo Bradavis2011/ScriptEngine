@@ -1,28 +1,55 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { generateScript, getSeries, getMe, ApiSeries } from '@/lib/api';
+import * as ImagePicker from 'expo-image-picker';
+import { generateScript, generateScriptFromPhotos, getSeries, getMe, ApiSeries } from '@/lib/api';
 import { colors, spacing, radius } from '@/lib/theme';
 import { GlowOrbs } from '@/components/GlowOrbs';
 import { PaywallSheet } from '@/components/PaywallSheet';
 
 const TEAL = '#03EDD6';
 
-const SCRIPT_TYPES = [
-  { value: 'niche_tip',       label: 'Niche Tip',      desc: '3 actionable tips' },
-  { value: 'data_drop',       label: 'Data Drop',       desc: 'Surprising stat or fact' },
-  { value: 'trend_take',      label: 'Trend Take',      desc: 'Hot take on a trend' },
-  { value: 'series_episode',  label: 'Series Episode',  desc: 'Part of an ongoing series' },
+const BASE_SCRIPT_TYPES = [
+  { value: 'niche_tip',      label: 'Niche Tip',      desc: '3 actionable tips' },
+  { value: 'data_drop',      label: 'Data Drop',       desc: 'Surprising stat or fact' },
+  { value: 'trend_take',     label: 'Trend Take',      desc: 'Hot take on a trend' },
+  { value: 'series_episode', label: 'Series Episode',  desc: 'Part of an ongoing series' },
+  { value: 'showcase',       label: 'Showcase',        desc: 'Walkthrough or tour' },
 ] as const;
 
-type ScriptTypeValue = (typeof SCRIPT_TYPES)[number]['value'];
+const RE_SCRIPT_TYPES = [
+  { value: 'listing_tour',  label: 'Listing Tour',   desc: 'Room-by-room walkthrough' },
+  { value: 'just_listed',   label: 'Just Listed',    desc: 'New listing announcement' },
+  { value: 'market_update', label: 'Market Update',  desc: 'Local market data & insights' },
+] as const;
+
+type ScriptTypeValue =
+  | 'niche_tip' | 'data_drop' | 'trend_take' | 'series_episode' | 'showcase'
+  | 'listing_tour' | 'just_listed' | 'market_update';
+
+function getContextLabel(type: ScriptTypeValue): string {
+  if (type === 'showcase' || type === 'listing_tour') return 'What are you featuring?';
+  if (type === 'just_listed') return 'Listing details';
+  if (type === 'market_update') return 'Market angle';
+  return 'Angle or topic';
+}
+
+function getContextPlaceholder(type: ScriptTypeValue): string {
+  if (type === 'showcase' || type === 'listing_tour')
+    return 'e.g. 3bd/2ba ranch, granite counters, big backyard, pool, near Lincoln Elementary';
+  if (type === 'just_listed')
+    return 'e.g. 742 Evergreen Terrace, 4bd/3ba, $425k, corner lot, updated kitchen';
+  if (type === 'market_update')
+    return 'e.g. inventory down 15%, median price up, first-time buyers priced out';
+  return 'e.g. "biggest mistakes beginners make" or "why I quit the gym"';
+}
 
 export default function GenerateScreen() {
   const router = useRouter();
@@ -37,6 +64,7 @@ export default function GenerateScreen() {
   );
   const [seriesId, setSeriesId] = useState(params.seriesId ?? '');
   const [context, setContext] = useState('');
+  const [photos, setPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [loading, setLoading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [paywallVisible, setPaywallVisible] = useState(false);
@@ -62,24 +90,56 @@ export default function GenerateScreen() {
     queryFn: async () => { const t = await getToken(); return getSeries(t!); },
   });
 
-  const scriptsToday   = me?.scriptsToday   ?? 0;
-  const scriptsPerDay  = me?.scriptsPerDay  ?? 1;
-  const scriptsLeft    = Math.max(0, scriptsPerDay - scriptsToday);
-  const atLimit        = scriptsLeft === 0;
+  const isRealEstate = me?.niche === 'Real Estate';
+  const visibleTypes = isRealEstate
+    ? [...BASE_SCRIPT_TYPES, ...RE_SCRIPT_TYPES]
+    : BASE_SCRIPT_TYPES;
+
+  const scriptsToday  = me?.scriptsToday  ?? 0;
+  const scriptsPerDay = me?.scriptsPerDay ?? 1;
+  const isUnlimited   = me?.scriptsPerDay == null;
+  const scriptsLeft   = isUnlimited ? Infinity : Math.max(0, scriptsPerDay - scriptsToday);
+  const atLimit       = !isUnlimited && scriptsLeft === 0;
+
+  const pickPhotos = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: 'images',
+      allowsMultipleSelection: true,
+      quality: 0.7,
+      selectionLimit: 10,
+    });
+    if (!result.canceled && result.assets.length > 0) {
+      setPhotos(prev => [...prev, ...result.assets].slice(0, 10));
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleGenerate = async () => {
     if (atLimit) { setPaywallVisible(true); return; }
     setLoading(true);
     try {
       const token = await getToken();
-      const script = await generateScript(
-        {
+      let script;
+      if (photos.length > 0) {
+        script = await generateScriptFromPhotos(
+          photos.map(p => ({ uri: p.uri, mimeType: p.mimeType ?? undefined })),
           scriptType,
-          seriesId: scriptType === 'series_episode' && seriesId ? seriesId : undefined,
-          additionalContext: context.trim() || undefined,
-        },
-        token!
-      );
+          context.trim() || undefined,
+          token!
+        );
+      } else {
+        script = await generateScript(
+          {
+            scriptType,
+            seriesId: scriptType === 'series_episode' && seriesId ? seriesId : undefined,
+            additionalContext: context.trim() || undefined,
+          },
+          token!
+        );
+      }
       qc.invalidateQueries({ queryKey: ['scripts'] });
       qc.invalidateQueries({ queryKey: ['today'] });
       qc.invalidateQueries({ queryKey: ['me'] });
@@ -99,11 +159,14 @@ export default function GenerateScreen() {
     qc.invalidateQueries({ queryKey: ['me'] });
   };
 
+  const contextLabel = getContextLabel(scriptType);
+  const contextIsOptional = scriptType !== 'just_listed' && scriptType !== 'market_update';
+
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       <GlowOrbs />
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
             <Ionicons name="close" size={22} color={colors.white} />
@@ -129,7 +192,9 @@ export default function GenerateScreen() {
                   color={atLimit ? colors.warning : TEAL}
                 />
                 <Text style={[styles.quotaText, atLimit && styles.quotaTextLimit]}>
-                  {atLimit
+                  {isUnlimited
+                    ? 'Unlimited generation'
+                    : atLimit
                     ? `Daily limit reached — ${scriptsPerDay}/day on ${me.tier} plan`
                     : `${scriptsLeft} script${scriptsLeft !== 1 ? 's' : ''} left today`}
                 </Text>
@@ -144,11 +209,11 @@ export default function GenerateScreen() {
 
           <Text style={styles.sectionLabel}>Script type</Text>
           <View style={styles.typeGrid}>
-            {SCRIPT_TYPES.map((t) => (
+            {visibleTypes.map((t) => (
               <TouchableOpacity
                 key={t.value}
                 style={[styles.typeCard, scriptType === t.value && styles.typeCardActive]}
-                onPress={() => setScriptType(t.value)}
+                onPress={() => setScriptType(t.value as ScriptTypeValue)}
               >
                 <Text style={[styles.typeCardLabel, scriptType === t.value && styles.typeCardLabelActive]}>
                   {t.label}
@@ -184,12 +249,49 @@ export default function GenerateScreen() {
             </View>
           )}
 
+          {/* Photos section */}
+          <View style={styles.photoSection}>
+            <View style={styles.photoHeader}>
+              <Text style={styles.sectionLabel}>
+                Photos <Text style={styles.optional}>(optional)</Text>
+              </Text>
+              {photos.length < 10 && (
+                <TouchableOpacity style={styles.addPhotoBtn} onPress={pickPhotos}>
+                  <Ionicons name="images-outline" size={14} color={TEAL} />
+                  <Text style={styles.addPhotoBtnText}>Add Photos</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {photos.length > 0 ? (
+              <>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoStrip}>
+                  {photos.map((photo, idx) => (
+                    <View key={idx} style={styles.photoThumb}>
+                      <Image source={{ uri: photo.uri }} style={styles.thumbImg} />
+                      <TouchableOpacity style={styles.removePhotoBtn} onPress={() => removePhoto(idx)}>
+                        <Ionicons name="close-circle" size={18} color="#fff" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+                <Text style={styles.photoHint}>
+                  {photos.length}/10 photo{photos.length !== 1 ? 's' : ''} — Gemini will analyze the images to generate your script
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.photoEmptyHint}>
+                Upload 1–10 photos and let Gemini generate a script from what it sees
+              </Text>
+            )}
+          </View>
+
           <Text style={styles.sectionLabel}>
-            Angle or topic <Text style={styles.optional}>(optional)</Text>
+            {contextLabel}{' '}
+            {contextIsOptional && <Text style={styles.optional}>(optional)</Text>}
           </Text>
           <TextInput
             style={styles.contextInput}
-            placeholder={'e.g. "biggest mistakes beginners make" or "why I quit the gym"'}
+            placeholder={getContextPlaceholder(scriptType)}
             placeholderTextColor={colors.muted}
             value={context}
             onChangeText={setContext}
@@ -214,7 +316,9 @@ export default function GenerateScreen() {
                 <Text style={styles.genBtnText}>Upgrade to Generate More</Text>
               </>
             ) : (
-              <Text style={styles.genBtnText}>Generate Script</Text>
+              <Text style={styles.genBtnText}>
+                {photos.length > 0 ? 'Generate from Photos' : 'Generate Script'}
+              </Text>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -267,8 +371,6 @@ const styles = StyleSheet.create({
   },
   typeCardActive: {
     borderColor: TEAL, backgroundColor: TEAL + '15',
-    shadowColor: TEAL, shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3, shadowRadius: 6, elevation: 3,
   },
   typeCardLabel: { fontSize: 14, fontWeight: '700', color: colors.white, marginBottom: 2 },
   typeCardLabelActive: { color: TEAL },
@@ -285,6 +387,27 @@ const styles = StyleSheet.create({
   seriesEpCount: { fontSize: 12, color: colors.muted },
   noSeriesBox: { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border },
   noSeriesText: { fontSize: 13, color: colors.muted },
+
+  photoSection: { marginTop: spacing.sm },
+  photoHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  addPhotoBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: TEAL + '18', borderRadius: radius.sm,
+    borderWidth: 1, borderColor: TEAL + '44',
+    paddingHorizontal: 10, paddingVertical: 6,
+    marginBottom: spacing.sm,
+  },
+  addPhotoBtnText: { fontSize: 12, fontWeight: '700', color: TEAL },
+  photoStrip: { marginBottom: 8 },
+  photoThumb: { marginRight: 8, position: 'relative' },
+  thumbImg: { width: 72, height: 72, borderRadius: radius.sm, backgroundColor: colors.card },
+  removePhotoBtn: {
+    position: 'absolute', top: -6, right: -6,
+    backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 9,
+  },
+  photoHint: { fontSize: 12, color: colors.muted, marginTop: 4 },
+  photoEmptyHint: { fontSize: 12, color: colors.muted, marginBottom: spacing.sm },
+
   contextInput: {
     backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1,
     borderColor: colors.border, padding: spacing.md, fontSize: 14,

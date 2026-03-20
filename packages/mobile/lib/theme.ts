@@ -18,6 +18,10 @@ export const scriptTypeColors: Record<string, string> = {
   data_drop: '#00E5FF',
   trend_take: '#F97316',
   niche_tip: '#22C55E',
+  listing_tour: '#3B82F6',
+  just_listed: '#A855F7',
+  market_update: '#F59E0B',
+  showcase: '#EC4899',
 };
 
 export const scriptTypeLabels: Record<string, string> = {
@@ -25,6 +29,10 @@ export const scriptTypeLabels: Record<string, string> = {
   data_drop: 'Data Drop',
   trend_take: 'Trend Take',
   niche_tip: 'Niche Tip',
+  listing_tour: 'Listing Tour',
+  just_listed: 'Just Listed',
+  market_update: 'Market Update',
+  showcase: 'Showcase',
 };
 
 export const typography = {

@@ -29,7 +29,7 @@ export default function Terms() {
             <ul className="space-y-2 list-disc list-inside">
               <li><span className="font-medium text-foreground">Script Pack ($25)</span> — five AI-generated scripts on your chosen niche and topic, delivered by email.</li>
               <li><span className="font-medium text-foreground">Concierge Brief ($50)</span> — a full content strategy brief including YouTube trend research, audience profile, keyword analysis, series plan, hook library, and scripts, delivered by email. Includes two rounds of revisions via email reply.</li>
-              <li><span className="font-medium text-foreground">Pro Subscription ($7/mo or $60/yr)</span> — access to the ClipScript mobile application including daily script generation, teleprompter camera, and series management.</li>
+              <li><span className="font-medium text-foreground">Pro Subscription ($99/mo or $60/yr)</span> — access to the ClipScript mobile application including daily script generation, teleprompter camera, and series management.</li>
             </ul>
           </section>
 

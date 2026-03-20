@@ -66,6 +66,15 @@ const SCRIPT_TYPE_PROMPTS: Record<string, string> = {
     'Write a short-form video script that opens with a relatable 2-sentence micro-story or personal moment, then pivots immediately to a universal insight the viewer can act on. Make them feel seen.',
   rapid_tip:
     'Write a short-form video script laser-focused on ONE single ultra-specific actionable tip. State it in the cold open, prove it works in one sentence, then tell them exactly how to do it right now.',
+  // Walkthrough / showcase types
+  showcase:
+    'Write a walkthrough/showcase script. The creator is walking viewers through something — a property, a product, a space, a setup. Structure it as a guided tour: strong opening hook about what they\'re about to see, 3 sections with smooth transitions between features/areas, and a closing CTA. Use short teleprompter lines with natural pausing points for filming while moving. Format teleprompterText with short lines (6-10 words each) separated by line breaks — the creator reads while walking and filming, not standing still. Add brief transition cues in brackets like [move to next area] or [turn to show this feature] between sections.',
+  listing_tour:
+    'Write a property walkthrough narration. Open with curb appeal or the most compelling feature. Walk room-by-room with smooth transitions. Highlight 3-4 standout features. Close with urgency + agent\'s CTA. Teleprompter text must use short broken lines — the agent reads while physically walking through the home. Format teleprompterText with short lines (6-10 words each) separated by line breaks. Add brief transition cues in brackets like [move to kitchen] or [step outside to backyard] between sections.',
+  just_listed:
+    'Write a \'just listed\' announcement. Create urgency. Lead with the single most compelling detail, hit 3-4 selling points fast, close with a direct-response CTA.',
+  market_update:
+    'Write a local market update. Reference the creator\'s market for context. Include 2-3 data-backed insights (inventory, pricing, buyer/seller dynamics). End with actionable advice + CTA.',
 };
 
 export interface GenerateScriptInput {
@@ -75,6 +84,8 @@ export interface GenerateScriptInput {
   episodeNumber?: number;
   additionalContext?: string;
   targetDuration?: '30-45' | '45-75';  // defaults to 45-75
+  city?: string;         // creator's primary market — used for local hooks
+  callToAction?: string; // creator's standard CTA injected into every script
 }
 
 export interface ScriptData {
@@ -181,6 +192,66 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   ]);
 }
 
+const PHOTO_SCRIPT_TIMEOUT_MS = 90_000; // 90 s — multimodal processing is slower
+
+export async function generateScriptFromPhotos(
+  images: Array<{ buffer: Buffer; mimeType: string }>,
+  input: GenerateScriptInput,
+): Promise<ScriptData> {
+  const model = getGenAI().getGenerativeModel({
+    model: 'gemini-2.5-flash',
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: SCRIPT_RESPONSE_SCHEMA as any,
+    },
+  });
+
+  const typePrompt =
+    SCRIPT_TYPE_PROMPTS[input.scriptType] ?? SCRIPT_TYPE_PROMPTS.showcase;
+  const locationContext = input.city
+    ? `The creator's primary market is ${input.city}. Weave in local/regional references naturally.`
+    : '';
+  const ctaContext = input.callToAction
+    ? `Creator's CTA: Use exactly "${input.callToAction}" as the callToAction field text. Write the callToActionCamera direction to match.`
+    : '';
+
+  const textPrompt = `You are an expert short-form video script writer for ${input.niche} content creators on TikTok, Instagram Reels, and YouTube Shorts.
+
+Analyze these ${images.length} photo${images.length !== 1 ? 's' : ''}. ${locationContext}
+
+${typePrompt}
+
+Based on what you see in the images, identify key features, areas, and anything visually compelling. Create a narration script grounded in what is actually visible.
+${input.additionalContext ? `\nAdditional context from creator: ${input.additionalContext}` : ''}
+${ctaContext}
+
+Requirements:
+- Total video length: 45-75 seconds when read at a natural pace
+- Cold open must hook the viewer in the first 3 seconds
+- Each section should take 10-15 seconds to deliver
+- teleprompterText is the full script for use in a teleprompter (no headings, just words to say)
+- caption is optimized for the feed (under 150 chars, no hashtags)
+- hashtags: 5-8 niche-relevant tags without the # symbol
+- totalDurationSeconds: estimated delivery time in seconds
+
+Write in a natural, conversational tone. Avoid corporate-speak.`.trim();
+
+  const imageParts = images.map((img) => ({
+    inlineData: {
+      data: img.buffer.toString('base64'),
+      mimeType: img.mimeType,
+    },
+  }));
+
+  const result = await withTimeout(
+    model.generateContent([...imageParts, { text: textPrompt }]),
+    PHOTO_SCRIPT_TIMEOUT_MS,
+    'Gemini generateScriptFromPhotos',
+  );
+  const text = result.response.text();
+  return JSON.parse(text) as ScriptData;
+}
+
 export async function generateScript(
   input: GenerateScriptInput,
   promptOverride?: string,
@@ -200,6 +271,13 @@ export async function generateScript(
       ? `This is episode ${input.episodeNumber} of the series "${input.seriesName}".`
       : '';
 
+  const locationContext = input.city
+    ? `Location: This creator's primary market is ${input.city}. Weave in local/regional references naturally where they strengthen the hook or credibility.`
+    : '';
+  const ctaContext = input.callToAction
+    ? `Creator's CTA: Use exactly "${input.callToAction}" as the callToAction field text. Write the callToActionCamera direction to match.`
+    : '';
+
   const prompt = `
 You are an expert short-form video script writer for ${input.niche} content creators on TikTok, Instagram Reels, and YouTube Shorts.
 
@@ -208,6 +286,8 @@ ${typePrompt}
 Niche: ${input.niche}
 ${seriesContext}
 ${input.additionalContext ?? ''}
+${locationContext}
+${ctaContext}
 
 Requirements:
 - Total video length: ${input.targetDuration === '30-45' ? '30-45 seconds — keep it tight, punchy, and instantly rewatchable' : '45-75 seconds when read at a natural pace'}

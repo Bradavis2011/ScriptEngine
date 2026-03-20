@@ -150,7 +150,7 @@ export default function ScriptDetailScreen() {
               <Text style={styles.refilmBtnText}>Re-film</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.filmBtn, styles.postedBtn]}
+              style={[styles.filmBtn, styles.postedBtn, { flex: 1 }]}
               onPress={markPosted}
               disabled={markingPosted}
             >
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   sticky: { padding: spacing.md },
   stickyRow: { flexDirection: 'row', gap: spacing.sm },
   filmBtn: {
-    flex: 1, backgroundColor: colors.accent, borderRadius: radius.lg,
+    alignSelf: 'stretch', backgroundColor: colors.accent, borderRadius: radius.lg,
     paddingVertical: 18, flexDirection: 'row', alignItems: 'center',
     justifyContent: 'center', gap: 8,
   },

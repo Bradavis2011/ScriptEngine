@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
-  Alert, ScrollView,
+  Alert, ScrollView, BackHandler, TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,10 +15,13 @@ const TEAL = '#03EDD6';
 const RED  = '#FD1741';
 
 const NICHES = [
-  'Fashion', 'Fitness', 'Food', 'Finance', 'Business', 'Tech',
-  'Health', 'Travel', 'Beauty', 'Education', 'Gaming', 'DIY',
-  'Parenting', 'Real Estate', 'Music', 'Motivation',
+  'Real Estate', 'Finance', 'Business', 'Fitness', 'Fashion', 'Food',
+  'Tech', 'Health', 'Travel', 'Beauty', 'Education', 'Gaming', 'DIY',
+  'Parenting', 'Music', 'Motivation',
 ];
+
+// 4 steps: 0 = welcome, 1 = niche, 2 = market + CTA, 3 = confirm
+const TOTAL_STEPS = 4;
 
 export default function Onboarding() {
   const router = useRouter();
@@ -26,15 +29,22 @@ export default function Onboarding() {
   const { user } = useUser();
   const [step, setStep] = useState(0);
   const [niche, setNiche] = useState('');
+  const [city, setCity] = useState('');
+  const [callToAction, setCallToAction] = useState('');
   const [loading, setLoading] = useState(false);
 
   const next = async () => {
-    if (step < 2) { setStep(step + 1); return; }
+    if (step < TOTAL_STEPS - 1) { setStep(step + 1); return; }
     setLoading(true);
     try {
       const token = await getToken();
       const email = user?.primaryEmailAddress?.emailAddress ?? '';
-      await createTenant({ email, niche }, token!);
+      await createTenant({
+        email,
+        niche,
+        city: city.trim() || undefined,
+        callToAction: callToAction.trim() || undefined,
+      }, token!);
       router.replace('/(app)');
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Something went wrong. Try again.');
@@ -43,7 +53,15 @@ export default function Onboarding() {
     }
   };
 
-  const progressWidth = step === 0 ? '33%' : step === 1 ? '66%' : '100%';
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (step > 0) { setStep(s => s - 1); return true; }
+      return false;
+    });
+    return () => sub.remove();
+  }, [step]);
+
+  const progressWidth = `${((step + 1) / TOTAL_STEPS) * 100}%` as `${number}%`;
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
@@ -114,6 +132,53 @@ export default function Onboarding() {
       )}
 
       {step === 2 && (
+        <KeyboardAvoidingView
+          style={styles.step}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          >
+            <Text style={styles.title}>
+              <Text style={{ color: colors.white }}>Your </Text>
+              <Text style={{ color: TEAL }}>market</Text>
+            </Text>
+            <Text style={styles.sub}>
+              Tell us where you operate and what you want viewers to do — your scripts will be personalized. Both are optional.
+            </Text>
+
+            <Text style={styles.fieldLabel}>City or market</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="e.g. Austin TX, Greater Seattle, NYC…"
+              placeholderTextColor={colors.muted}
+              value={city}
+              onChangeText={setCity}
+              autoCapitalize="words"
+              returnKeyType="next"
+            />
+
+            <Text style={[styles.fieldLabel, { marginTop: spacing.lg }]}>Your call-to-action</Text>
+            <TextInput
+              style={[styles.textInput, styles.textInputMulti]}
+              placeholder={'e.g. "DM me \'SHOW\' for a free home search" or "Link in bio to book a call"'}
+              placeholderTextColor={colors.muted}
+              value={callToAction}
+              onChangeText={setCallToAction}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+            <Text style={styles.fieldHint}>
+              This goes at the end of every script automatically.
+            </Text>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      )}
+
+      {step === 3 && (
         <View style={styles.step}>
           <Text style={styles.title}>
             <Text style={{ color: colors.white }}>You're all </Text>
@@ -123,8 +188,22 @@ export default function Onboarding() {
             Hit Generate any time to create a script. Film it on the built-in teleprompter, then mark it posted when it's live.
           </Text>
           <View style={styles.confirmBox}>
-            <Text style={styles.confirmLabel}>Your niche</Text>
-            <Text style={styles.confirmValue}>{niche}</Text>
+            <View style={styles.confirmRow}>
+              <Text style={styles.confirmLabel}>Niche</Text>
+              <Text style={styles.confirmValue}>{niche}</Text>
+            </View>
+            {city.trim() !== '' && (
+              <View style={[styles.confirmRow, styles.confirmRowBorder]}>
+                <Text style={styles.confirmLabel}>Market</Text>
+                <Text style={styles.confirmValue}>{city.trim()}</Text>
+              </View>
+            )}
+            {callToAction.trim() !== '' && (
+              <View style={[styles.confirmRow, styles.confirmRowBorder]}>
+                <Text style={styles.confirmLabel}>CTA</Text>
+                <Text style={[styles.confirmValue, { fontSize: 14 }]}>{callToAction.trim()}</Text>
+              </View>
+            )}
           </View>
         </View>
       )}
@@ -137,7 +216,7 @@ export default function Onboarding() {
         {loading ? (
           <ActivityIndicator color="#0B0B0D" />
         ) : (
-          <Text style={styles.btnText}>{step === 2 ? 'Start Creating' : 'Continue'}</Text>
+          <Text style={styles.btnText}>{step === TOTAL_STEPS - 1 ? 'Start Creating' : 'Continue'}</Text>
         )}
       </TouchableOpacity>
     </SafeAreaView>
@@ -180,17 +259,34 @@ const styles = StyleSheet.create({
   },
   chipActive: {
     backgroundColor: TEAL + '18', borderColor: TEAL,
-    shadowColor: TEAL, shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3, shadowRadius: 6, elevation: 3,
   },
   chipText: { fontSize: 15, fontWeight: '600', color: colors.neutral },
   chipTextActive: { color: TEAL, fontWeight: '700' },
 
-  confirmBox: {
-    backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md,
-    borderWidth: 1, borderColor: TEAL + '44',
+  // Market + CTA step
+  fieldLabel: {
+    fontSize: 12, fontWeight: '700', color: colors.muted,
+    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: spacing.sm,
   },
-  confirmLabel: { fontSize: 11, fontWeight: '600', color: colors.neutral, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 },
+  textInput: {
+    backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1,
+    borderColor: colors.border, padding: spacing.md, fontSize: 15,
+    color: colors.white,
+  },
+  textInputMulti: { minHeight: 80, textAlignVertical: 'top' },
+  fieldHint: { fontSize: 12, color: colors.muted, marginTop: 6 },
+
+  // Confirm step
+  confirmBox: {
+    backgroundColor: colors.card, borderRadius: radius.md,
+    borderWidth: 1, borderColor: TEAL + '44', overflow: 'hidden',
+  },
+  confirmRow: { padding: spacing.md },
+  confirmRowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
+  confirmLabel: {
+    fontSize: 11, fontWeight: '600', color: colors.neutral,
+    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4,
+  },
   confirmValue: { fontSize: 20, fontWeight: '700', color: colors.white },
 
   btn: {

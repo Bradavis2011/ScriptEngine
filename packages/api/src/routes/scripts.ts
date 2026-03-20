@@ -1,14 +1,30 @@
 import { Router, Response } from 'express';
+import multer from 'multer';
 import { AuthedRequest, requireAuth } from '../middleware/requireAuth';
 import { prisma } from '../lib/prisma';
-import { generateScript, GenerateScriptInput } from '../lib/gemini';
+import { generateScript, generateScriptFromPhotos, GenerateScriptInput } from '../lib/gemini';
 import { getActivePrompt } from '../lib/promptVersions';
 import { computeEngagementScore, checkExperimentCompletion } from '../lib/calibration';
 
 const router = Router();
 
-const SCRIPT_TYPES = ['series_episode', 'data_drop', 'trend_take', 'niche_tip'] as const;
+const SCRIPT_TYPES = [
+  'series_episode', 'data_drop', 'trend_take', 'niche_tip',
+  'showcase', 'listing_tour', 'just_listed', 'market_update',
+] as const;
 type ScriptType = (typeof SCRIPT_TYPES)[number];
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 10 },
+  fileFilter: (_req, file, cb) => {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      cb(new Error('Only JPEG, PNG, and WebP images are supported'));
+    } else {
+      cb(null, true);
+    }
+  },
+});
 
 // GET /api/scripts — all scripts for tenant, optional ?status= filter
 router.get('/', requireAuth, async (req, res: Response) => {
@@ -45,20 +61,22 @@ router.post('/generate', requireAuth, async (req, res: Response) => {
     return;
   }
 
-  // Quota enforcement
-  const startOfDay = new Date();
-  startOfDay.setUTCHours(0, 0, 0, 0);
-  const todayCount = await prisma.script.count({
-    where: { tenantId: tenant.id, createdAt: { gte: startOfDay } },
-  });
-  if (todayCount >= tenant.scriptsPerDay) {
-    res.status(429).json({
-      error: `Daily limit reached. You've used ${todayCount} of ${tenant.scriptsPerDay} script${tenant.scriptsPerDay !== 1 ? 's' : ''} today.`,
-      limit: tenant.scriptsPerDay,
-      used: todayCount,
-      tier: tenant.tier,
+  // Quota enforcement (admins are unlimited)
+  if (!tenant.isAdmin) {
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const todayCount = await prisma.script.count({
+      where: { tenantId: tenant.id, createdAt: { gte: startOfDay } },
     });
-    return;
+    if (todayCount >= tenant.scriptsPerDay) {
+      res.status(429).json({
+        error: `Daily limit reached. You've used ${todayCount} of ${tenant.scriptsPerDay} script${tenant.scriptsPerDay !== 1 ? 's' : ''} today.`,
+        limit: tenant.scriptsPerDay,
+        used: todayCount,
+        tier: tenant.tier,
+      });
+      return;
+    }
   }
 
   const { scriptType, seriesId, additionalContext } = req.body as {
@@ -93,6 +111,8 @@ router.post('/generate', requireAuth, async (req, res: Response) => {
     seriesName,
     episodeNumber,
     additionalContext,
+    city: tenant.city ?? undefined,
+    callToAction: tenant.callToAction ?? undefined,
   };
 
   let scriptData;
@@ -125,6 +145,87 @@ router.post('/generate', requireAuth, async (req, res: Response) => {
 
   res.json(script);
 });
+
+// POST /api/scripts/generate-from-photos — generate a script from uploaded photos
+router.post(
+  '/generate-from-photos',
+  requireAuth,
+  upload.array('photos', 10),
+  async (req, res: Response) => {
+    const { clerkUserId } = req as AuthedRequest;
+
+    const tenant = await prisma.tenant.findUnique({ where: { clerkUserId } });
+    if (!tenant) {
+      res.status(404).json({ error: 'Tenant not found — complete onboarding first' });
+      return;
+    }
+
+    const files = (req as any).files as Express.Multer.File[] | undefined;
+    if (!files || files.length === 0) {
+      res.status(400).json({ error: 'At least one photo is required' });
+      return;
+    }
+    if (files.length > 10) {
+      res.status(400).json({ error: 'Maximum 10 photos allowed' });
+      return;
+    }
+
+    // Quota enforcement (admins are unlimited)
+    if (!tenant.isAdmin) {
+      const startOfDay = new Date();
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const todayCount = await prisma.script.count({
+        where: { tenantId: tenant.id, createdAt: { gte: startOfDay } },
+      });
+      if (todayCount >= tenant.scriptsPerDay) {
+        res.status(429).json({
+          error: `Daily limit reached. You've used ${todayCount} of ${tenant.scriptsPerDay} script${tenant.scriptsPerDay !== 1 ? 's' : ''} today.`,
+          limit: tenant.scriptsPerDay,
+          used: todayCount,
+          tier: tenant.tier,
+        });
+        return;
+      }
+    }
+
+    const { scriptType, additionalContext } = req.body as {
+      scriptType?: string;
+      additionalContext?: string;
+    };
+
+    const resolvedType: ScriptType =
+      SCRIPT_TYPES.includes(scriptType as ScriptType) ? (scriptType as ScriptType) : 'showcase';
+
+    const images = files.map((f) => ({ buffer: f.buffer, mimeType: f.mimetype }));
+    const input: GenerateScriptInput = {
+      niche: tenant.niche,
+      scriptType: resolvedType,
+      additionalContext,
+      city: tenant.city ?? undefined,
+      callToAction: tenant.callToAction ?? undefined,
+    };
+
+    let scriptData;
+    try {
+      scriptData = await generateScriptFromPhotos(images, input);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('[scripts/generate-from-photos] Gemini error:', message);
+      res.status(502).json({ error: 'Script generation failed', detail: message });
+      return;
+    }
+
+    const script = await prisma.script.create({
+      data: {
+        tenantId: tenant.id,
+        scriptType: resolvedType,
+        scriptData: scriptData as any,
+      },
+    });
+
+    res.json(script);
+  }
+);
 
 // GET /api/scripts/today — scripts created today
 router.get('/today', requireAuth, async (req, res: Response) => {
