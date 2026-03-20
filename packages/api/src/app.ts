@@ -13,6 +13,7 @@ import growthRouter from './growth/routes/growth';
 import seoRouter from './routes/seo';
 import suggestionsRouter from './routes/suggestions';
 import unsubscribeRouter from './routes/unsubscribe';
+import metricsRouter from './routes/metrics';
 
 export function createApp() {
   const app = express();
@@ -53,6 +54,7 @@ export function createApp() {
   app.use('/api/growth', growthRouter);
   app.use('/api/seo', seoRouter);
   app.use('/api/unsubscribe', unsubscribeRouter);
+  app.use('/api/metrics', metricsRouter);
 
   // 404 fallthrough
   app.use((_req, res) => {

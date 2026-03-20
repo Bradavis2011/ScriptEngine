@@ -36,6 +36,7 @@ export const QUEUE_NAMES = {
   TOPIC_DISCOVERY: 'topic-discovery',
   MARKET_DATA_SYNC: 'market-data-sync',
   CREATOR_OUTREACH: 'creator-outreach',
+  METRICS_ROLLUP: 'metrics-rollup',
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -73,4 +74,5 @@ export const SCHEDULES: Record<string, string> = {
   [QUEUE_NAMES.TOPIC_DISCOVERY]: '0 */6 * * *',   // every 6 hours
   [QUEUE_NAMES.MARKET_DATA_SYNC]: '0 5 * * *',    // daily 5 AM UTC
   [QUEUE_NAMES.CREATOR_OUTREACH]: '0 10 * * 1,3,5', // Mon/Wed/Fri 10 AM UTC
+  [QUEUE_NAMES.METRICS_ROLLUP]:   '0 2 * * *',       // daily 2 AM UTC
 };

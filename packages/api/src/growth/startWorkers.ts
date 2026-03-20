@@ -10,6 +10,7 @@ import { runPromptEvolution } from './workers/promptEvolution';
 import { runTopicDiscovery } from './workers/topicDiscovery';
 import { runMarketDataSync } from './workers/marketDataSync';
 import { runCreatorOutreach } from './workers/creatorOutreach';
+import { runMetricsRollup } from './workers/metricsRollup';
 import { seedGrowthTemplates } from './services/growthTemplates';
 import { seedPromptVersions } from '../lib/promptVersions';
 
@@ -26,6 +27,7 @@ const WORKER_HANDLERS: Record<string, WorkerHandler> = {
   [QUEUE_NAMES.TOPIC_DISCOVERY]: runTopicDiscovery,
   [QUEUE_NAMES.MARKET_DATA_SYNC]: runMarketDataSync,
   [QUEUE_NAMES.CREATOR_OUTREACH]: runCreatorOutreach,
+  [QUEUE_NAMES.METRICS_ROLLUP]:   runMetricsRollup,
 };
 
 const workers: Worker[] = [];

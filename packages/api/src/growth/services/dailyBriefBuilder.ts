@@ -1,8 +1,12 @@
 import { prisma } from '../../lib/prisma';
 import { getGrowthDashboard } from './growthMetrics';
+import { getUnitEconomicsDashboard } from './unitEconomics';
 
 export async function buildDailyBriefHtml(): Promise<string> {
-  const dashboard = await getGrowthDashboard();
+  const [dashboard, unitEcon] = await Promise.all([
+    getGrowthDashboard(),
+    getUnitEconomicsDashboard(),
+  ]);
   const yesterday = new Date(Date.now() - 24 * 3600 * 1000);
 
   const [topPainPoints, topCreators, outreachStats, topSuggestions] = await Promise.all([
@@ -105,6 +109,34 @@ export async function buildDailyBriefHtml(): Promise<string> {
     </div>`
       : '';
 
+  // Unit economics section
+  const mrr = (unitEcon.mrr.mrrCents / 100).toFixed(2);
+  const arr = (unitEcon.mrr.arrCents / 100).toFixed(0);
+  const ltv = (unitEcon.ltv.avgLtvCents / 100).toFixed(2);
+  const arpu = (unitEcon.arpu.arpuCents / 100).toFixed(2);
+  const churnDisplay = unitEcon.churn.churnRate30d != null
+    ? `${unitEcon.churn.churnRate30d}%`
+    : '—';
+
+  const unitEconSection = `<div class="card">
+    <div class="label">Unit Economics</div>
+    <div class="stat-grid">
+      <div><div class="stat">$${mrr}</div><p>MRR</p></div>
+      <div><div class="stat">$${arr}</div><p>ARR</p></div>
+      <div><div class="stat">${unitEcon.totalTenants}</div><p>Total Users</p></div>
+    </div>
+    <div class="stat-grid" style="margin-top:12px;">
+      <div><div class="stat">${unitEcon.activeUsers.dau}</div><p>DAU</p></div>
+      <div><div class="stat">${unitEcon.activeUsers.mau}</div><p>MAU</p></div>
+      <div><div class="stat">${unitEcon.ltv.payingCustomers}</div><p>Paying</p></div>
+    </div>
+    <div style="margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center;">
+      <div><p style="margin:0 0 2px;color:#9ca3af;font-size:11px;">LTV</p><p style="margin:0;color:#e5e5e7;font-weight:600;">$${ltv}</p></div>
+      <div><p style="margin:0 0 2px;color:#9ca3af;font-size:11px;">ARPU</p><p style="margin:0;color:#e5e5e7;font-weight:600;">$${arpu}</p></div>
+      <div><p style="margin:0 0 2px;color:#9ca3af;font-size:11px;">Churn 30d</p><p style="margin:0;color:#e5e5e7;font-weight:600;">${churnDisplay}</p></div>
+    </div>
+  </div>`;
+
   const seo = dashboard.seo;
 
   const seoSection = `<div class="card">
@@ -171,6 +203,7 @@ export async function buildDailyBriefHtml(): Promise<string> {
       </div>
     </div>
 
+    ${unitEconSection}
     ${outreachSection}
     ${seoSection}
     ${painPointsSection}

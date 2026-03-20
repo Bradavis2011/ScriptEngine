@@ -7,6 +7,7 @@ import { generateScript, generateScriptFromPhotos, GenerateScriptInput } from '.
 import { getActivePrompt } from '../lib/promptVersions';
 import { computeEngagementScore, checkExperimentCompletion, ensureExperimentRunExists } from '../lib/calibration';
 import { computeScriptMetrics } from '../lib/scriptMetrics';
+import { touchActivity, logUserEvent } from '../lib/analytics';
 
 const router = Router();
 
@@ -160,6 +161,10 @@ router.post('/generate', requireAuth, async (req, res: Response) => {
       metrics: metrics as any,
     },
   });
+
+  // Track activity + analytics events (fire-and-forget)
+  touchActivity(tenant.id);
+  logUserEvent(tenant.id, 'script_generated', { scriptType: resolvedType, scriptId: script.id });
 
   // Track suggestion usage
   if (resolvedSuggestionId) {
@@ -336,6 +341,15 @@ router.patch('/:id/status', requireAuth, async (req, res: Response) => {
     data: { filmingStatus },
   });
 
+  // Log filming/posting events for analytics
+  if (filmingStatus === 'filmed') {
+    touchActivity(tenant.id);
+    logUserEvent(tenant.id, 'script_filmed', { scriptId: id });
+  } else if (filmingStatus === 'posted') {
+    touchActivity(tenant.id);
+    logUserEvent(tenant.id, 'script_posted', { scriptId: id });
+  }
+
   res.json(updated);
 });
 
@@ -389,6 +403,13 @@ router.post('/:id/performance', requireAuth, async (req, res: Response) => {
       performance: performance as any,
       filmingStatus: 'posted', // auto-mark as posted when logging performance
     },
+  });
+
+  // Log performance event for analytics
+  touchActivity(tenant.id);
+  logUserEvent(tenant.id, 'performance_logged', {
+    scriptId: id,
+    engagementScore: performance.engagementScore,
   });
 
   // Check if any experiments can be evaluated with this new data

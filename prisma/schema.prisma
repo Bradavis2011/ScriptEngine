@@ -8,19 +8,24 @@ datasource db {
 }
 
 model Tenant {
-  id            String   @id @default(cuid())
-  clerkUserId   String   @unique
-  email         String
-  niche         String
-  city          String?  // primary market / location (e.g. "Austin TX")
-  callToAction  String?  // creator's standard CTA injected into scripts
-  tier          String   @default("free") // free | pro | founders | team
-  scriptsPerDay Int      @default(1)
-  isAdmin       Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  scripts       Script[]
-  series        Series[]
+  id                   String    @id @default(cuid())
+  clerkUserId          String    @unique
+  email                String
+  niche                String
+  city                 String?   // primary market / location (e.g. "Austin TX")
+  callToAction         String?   // creator's standard CTA injected into scripts
+  tier                 String    @default("free") // free | pro | founders | team
+  scriptsPerDay        Int       @default(1)
+  isAdmin              Boolean   @default(false)
+  lastActiveAt         DateTime? // updated once per day on first request — drives DAU/MAU
+  acquisitionSource    String?   // organic | referral | paid | direct
+  lifetimeRevenueCents Int       @default(0) // sum of all subscription + one-off payments
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  scripts              Script[]
+  series               Series[]
+  userEvents           UserEvent[]
+  subscriptionEvents   SubscriptionEvent[]
 }
 
 model Script {
@@ -277,6 +282,7 @@ model ConciergeOrder {
   niche           String?
   topic           String?
   orderType       String   @default("concierge") // pack | concierge
+  amountPaid      Int?     // in cents, from Stripe session.amount_total
   // concierge extra fields
   brief           String?  // raw brief from customer form
   platform        String?  // tiktok | reels | shorts | all
@@ -287,4 +293,64 @@ model ConciergeOrder {
   reportToken     String?  @unique @default(cuid())
   reportHtml      String?
   createdAt       DateTime @default(now())
+
+  @@index([email])
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Unit economics — event log + daily rollup
+// ---------------------------------------------------------------------------
+
+model SubscriptionEvent {
+  id           String    @id @default(cuid())
+  tenantId     String?   // null when tenant not yet created (race at signup)
+  tenant       Tenant?   @relation(fields: [tenantId], references: [id])
+  clerkUserId  String    // from RevenueCat event.app_user_id
+  eventType    String    // INITIAL_PURCHASE | RENEWAL | REACTIVATION | CANCELLATION | EXPIRATION
+  productId    String    // founders_annual | pro_monthly | pro_annual
+  revenueCents Int       // actual revenue in cents (0 for cancellations/expirations)
+  periodStart  DateTime?
+  periodEnd    DateTime?
+  source       String    @default("revenuecat") // revenuecat | stripe
+  rawEvent     Json?     // full webhook payload for debugging
+  createdAt    DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([clerkUserId])
+  @@index([eventType, createdAt])
+}
+
+model UserEvent {
+  id        String    @id @default(cuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  event     String    // session_start | script_generated | script_filmed | script_posted | performance_logged
+  meta      Json?     // { scriptType, engagementScore, etc. }
+  createdAt DateTime  @default(now())
+
+  @@index([tenantId, event])
+  @@index([event, createdAt])
+  @@index([tenantId, createdAt])
+}
+
+model MetricSnapshot {
+  id                  String   @id @default(cuid())
+  date                DateTime @unique // UTC midnight of the day being measured
+  dau                 Int      // distinct active users on this day
+  wau                 Int      // distinct active users in prior 7 days
+  mau                 Int      // distinct active users in prior 30 days
+  newSignups          Int      // tenants created on this day
+  scriptsGenerated    Int      // scripts created on this day
+  scriptsFilmed       Int      // script_filmed events on this day
+  scriptsPosted       Int      // script_posted events on this day
+  revenueToday        Int      // cents — subscription + one-off revenue on this day
+  mrrSnapshot         Int      // estimated MRR in cents at end of day
+  activeSubscriptions Int      // non-free tenants at end of day
+  freeUsers           Int
+  proUsers            Int
+  foundersUsers       Int
+  createdAt           DateTime @default(now())
+
+  @@index([date])
 }
