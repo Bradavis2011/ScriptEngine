@@ -13,7 +13,12 @@ import { prisma } from '../lib/prisma';
 const router = Router();
 
 function verifyToken(email: string, token: string): boolean {
-  const secret = process.env.UNSUBSCRIBE_SECRET ?? process.env.CLERK_SECRET_KEY ?? 'default-secret';
+  const secret = process.env.UNSUBSCRIBE_SECRET ?? process.env.CLERK_SECRET_KEY;
+  if (!secret) throw new Error('UNSUBSCRIBE_SECRET or CLERK_SECRET_KEY must be set');
+
+  // Validate hex format before Buffer.from — prevents throw inside timingSafeEqual
+  if (!/^[a-f0-9]{32}$/i.test(token)) return false;
+
   const expected = crypto
     .createHmac('sha256', secret)
     .update(email)

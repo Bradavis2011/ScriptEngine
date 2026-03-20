@@ -231,6 +231,7 @@ model TopicSuggestion {
   createdAt       DateTime  @default(now())
   scripts         Script[]
 
+  @@unique([niche, source, topic])
   @@index([niche, expiresAt])
   @@index([source])
 }

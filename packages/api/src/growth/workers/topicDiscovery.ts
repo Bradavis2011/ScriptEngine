@@ -36,31 +36,30 @@ export async function runTopicDiscovery(_job: Job): Promise<void> {
       console.log(`[topicDiscovery] ${niche}: ${suggestions.length} topics found`);
 
       for (const s of suggestions) {
-        // Upsert: match on niche + source + topic (truncated to avoid unique constraint issues)
-        const existing = await prisma.topicSuggestion.findFirst({
-          where: {
-            niche: s.niche,
-            source: s.source,
-            topic: { contains: s.topic.slice(0, 40) },
-            expiresAt: { gt: new Date() },
+        // Upsert on unique key (niche, source, topic) — atomic, safe for concurrent runs
+        const result = await prisma.topicSuggestion.upsert({
+          where: { niche_source_topic: { niche: s.niche, source: s.source, topic: s.topic } },
+          update: {
+            contextSnippet: s.contextSnippet,
+            relevanceScore: s.relevanceScore,
+            expiresAt: s.expiresAt,
+            sourceUrl: s.sourceUrl,
           },
+          create: {
+            niche: s.niche,
+            topic: s.topic,
+            source: s.source,
+            sourceUrl: s.sourceUrl,
+            scriptType: s.scriptType,
+            contextSnippet: s.contextSnippet,
+            relevanceScore: s.relevanceScore,
+            expiresAt: s.expiresAt,
+          },
+          select: { id: true, createdAt: true },
         });
-
-        if (!existing) {
-          await prisma.topicSuggestion.create({
-            data: {
-              niche: s.niche,
-              topic: s.topic,
-              source: s.source,
-              sourceUrl: s.sourceUrl,
-              scriptType: s.scriptType,
-              contextSnippet: s.contextSnippet,
-              relevanceScore: s.relevanceScore,
-              expiresAt: s.expiresAt,
-            },
-          });
-          totalCreated++;
-        }
+        // Count as created if very recent (upsert doesn't expose wasCreated)
+        const ageMs = Date.now() - result.createdAt.getTime();
+        if (ageMs < 5000) totalCreated++;
       }
     } catch (err) {
       console.error(

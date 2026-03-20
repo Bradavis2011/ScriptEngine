@@ -16,7 +16,8 @@ import { prisma } from '../../lib/prisma';
 const MAX_PER_RUN = 5;
 
 function generateUnsubscribeToken(email: string): string {
-  const secret = process.env.UNSUBSCRIBE_SECRET ?? process.env.CLERK_SECRET_KEY ?? 'default-secret';
+  const secret = process.env.UNSUBSCRIBE_SECRET ?? process.env.CLERK_SECRET_KEY;
+  if (!secret) throw new Error('UNSUBSCRIBE_SECRET or CLERK_SECRET_KEY must be set for outreach');
   return crypto
     .createHmac('sha256', secret)
     .update(email)

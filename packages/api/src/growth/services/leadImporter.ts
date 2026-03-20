@@ -90,34 +90,39 @@ export async function importLeads(
       continue;
     }
 
-    try {
-      const result = await prisma.lead.upsert({
-        where: { source_sourceId: { source, sourceId: lead.sourceId } },
-        update: {
-          firstName: lead.firstName,
-          lastName: lead.lastName,
-          company: lead.company,
-        },
-        create: {
-          email: lead.email,
-          firstName: lead.firstName,
-          lastName: lead.lastName,
-          company: lead.company,
-          source,
-          sourceId: lead.sourceId,
-          status: 'new',
-        },
-      });
+    // Check if lead already exists (reliable, no timing heuristic)
+    const existing = await prisma.lead.findUnique({
+      where: { source_sourceId: { source, sourceId: lead.sourceId } },
+      select: { id: true },
+    });
 
-      // If it was just created (createdAt is recent)
-      const ageMs = Date.now() - result.createdAt.getTime();
-      if (ageMs < 5000) {
-        created++;
-      } else {
+    try {
+      if (existing) {
+        await prisma.lead.update({
+          where: { source_sourceId: { source, sourceId: lead.sourceId } },
+          data: {
+            firstName: lead.firstName,
+            lastName: lead.lastName,
+            company: lead.company,
+          },
+        });
         skipped++; // already existed
+      } else {
+        await prisma.lead.create({
+          data: {
+            email: lead.email,
+            firstName: lead.firstName,
+            lastName: lead.lastName,
+            company: lead.company,
+            source,
+            sourceId: lead.sourceId,
+            status: 'new',
+          },
+        });
+        created++;
       }
     } catch (err) {
-      console.error(`[leadImporter] Failed to upsert ${lead.email}:`, err instanceof Error ? err.message : err);
+      console.error(`[leadImporter] Failed to import ${lead.email}:`, err instanceof Error ? err.message : err);
       errors++;
     }
   }

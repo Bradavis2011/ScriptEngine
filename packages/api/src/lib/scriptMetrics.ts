@@ -56,8 +56,10 @@ export function computeReadability(text: string): number {
     .filter((s) => s.length > 0);
   const sentenceCount = Math.max(sentences.length, 1);
 
-  // Split into words
-  const words = text.split(/\s+/).filter((w) => w.length > 0);
+  // Split into words, filtering out pure-punctuation tokens (they strip to empty in countSyllables)
+  const words = text
+    .split(/\s+/)
+    .filter((w) => w.length > 0 && /[a-zA-Z]/.test(w));
   const wordCount = Math.max(words.length, 1);
 
   // Count total syllables

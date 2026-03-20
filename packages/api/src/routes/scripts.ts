@@ -405,7 +405,9 @@ router.post('/:id/performance', requireAuth, async (req, res: Response) => {
 
   // Update avgPerformance on the suggestion if this script came from one
   if (script.suggestionId) {
-    updateSuggestionPerformance(script.suggestionId, performance.engagementScore).catch(() => {});
+    updateSuggestionPerformance(script.suggestionId, performance.engagementScore).catch((err) =>
+      console.warn('[scripts/performance] updateSuggestionPerformance failed:', err instanceof Error ? err.message : err),
+    );
   }
 
   res.json(updated);
